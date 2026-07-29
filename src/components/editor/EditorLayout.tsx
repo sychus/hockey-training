@@ -148,25 +148,27 @@ export function EditorLayout() {
         <StepNavigator />
 
         {/* Play notes */}
-        {!noPlaySelected && session.plays[activePlayIndex] && (
-          <PlayNotes
-            playId={session.plays[activePlayIndex].id}
-            notes={session.plays[activePlayIndex].notes ?? ''}
-          />
-        )}
+        {!noPlaySelected && <PlayNotes />}
       </div>
     </div>
   )
 }
 
-function PlayNotes({ playId, notes }: { playId: string; notes: string }) {
+function PlayNotes() {
+  const activePlayIndex = useEditorStore((s) => s.activePlayIndex)
+  const play = useEditorStore((s) =>
+    s.activePlayIndex >= 0 ? s.session.plays[s.activePlayIndex] : null,
+  )
   const updatePlayNotes = useEditorStore((s) => s.updatePlayNotes)
+
+  if (!play || activePlayIndex < 0) return null
 
   return (
     <div className="w-full">
       <textarea
-        value={notes}
-        onChange={(e) => updatePlayNotes(playId, e.target.value)}
+        key={play.id}
+        defaultValue={play.notes ?? ''}
+        onChange={(e) => updatePlayNotes(play.id, e.target.value)}
         placeholder="Notas tacticas de esta jugada..."
         rows={2}
         className="w-full px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm placeholder:text-gray-600 outline-none focus:ring-1 focus:ring-blue-500 resize-none"
