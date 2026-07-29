@@ -17,6 +17,7 @@ export function EditorLayout() {
   const selectElement = useEditorStore((s) => s.selectElement)
   const selectedElementId = useEditorStore((s) => s.selectedElementId)
   const removeElement = useEditorStore((s) => s.removeElement)
+  const updateElement = useEditorStore((s) => s.updateElement)
 
   const { saving, lastSaved, error: saveError } = useAutoSave()
   const [previewMode, setPreviewMode] = useState(false)
@@ -135,8 +136,10 @@ export function EditorLayout() {
                 height={fieldHeight}
                 elements={currentElements}
                 draggable
+                selectedElementId={selectedElementId}
                 onElementDragEnd={handleDragEnd}
                 onElementSelect={selectElement}
+                onElementUpdate={updateElement}
               />
             </Stage>
           )}

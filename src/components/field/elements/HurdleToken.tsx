@@ -1,4 +1,4 @@
-import { Rect, Group } from 'react-konva'
+import { Rect, Circle, Line, Group } from 'react-konva'
 import { COLORS } from '../../../lib/constants'
 import type { HurdleElement } from '../../../types'
 
@@ -7,17 +7,24 @@ interface HurdleTokenProps {
   fieldWidth: number
   fieldHeight: number
   draggable?: boolean
+  selected?: boolean
   onDragEnd?: (id: string, x: number, y: number) => void
   onSelect?: (id: string) => void
+  onUpdate?: (id: string, updates: Partial<HurdleElement>) => void
 }
+
+const HANDLE_RADIUS = 7
+const HANDLE_DISTANCE = 25
 
 export function HurdleToken({
   element,
   fieldWidth,
   fieldHeight,
   draggable = false,
+  selected = false,
   onDragEnd,
   onSelect,
+  onUpdate,
 }: HurdleTokenProps) {
   const x = (element.x / 100) * fieldWidth
   const y = (element.y / 100) * fieldHeight
@@ -47,6 +54,38 @@ export function HurdleToken({
         stroke="#000"
         strokeWidth={1}
       />
+
+      {/* Rotation handle */}
+      {selected && draggable && (
+        <>
+          <Line
+            points={[0, 0, 0, -HANDLE_DISTANCE]}
+            stroke="#3b82f6"
+            strokeWidth={1.5}
+            dash={[4, 3]}
+          />
+          <Circle
+            x={0}
+            y={-HANDLE_DISTANCE}
+            radius={HANDLE_RADIUS}
+            fill="#3b82f6"
+            stroke="#fff"
+            strokeWidth={2}
+            draggable
+            onDragMove={(e) => {
+              const stage = e.target.getStage()
+              if (!stage) return
+              const pointer = stage.getPointerPosition()
+              if (!pointer) return
+              const angle = Math.atan2(pointer.y - y, pointer.x - x)
+              const degrees = (angle * 180) / Math.PI + 90
+              onUpdate?.(element.id, { rotation: degrees })
+              e.target.x(0)
+              e.target.y(-HANDLE_DISTANCE)
+            }}
+          />
+        </>
+      )}
     </Group>
   )
 }

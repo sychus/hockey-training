@@ -16,8 +16,10 @@ interface FieldRendererProps {
   height: number
   elements: FieldElement[]
   draggable?: boolean
+  selectedElementId?: string | null
   onElementDragEnd?: (id: string, x: number, y: number) => void
   onElementSelect?: (id: string) => void
+  onElementUpdate?: (id: string, updates: Partial<FieldElement>) => void
 }
 
 export function FieldRenderer({
@@ -25,8 +27,10 @@ export function FieldRenderer({
   height,
   elements,
   draggable = false,
+  selectedElementId,
   onElementDragEnd,
   onElementSelect,
+  onElementUpdate,
 }: FieldRendererProps) {
   const commonProps = {
     fieldWidth: width,
@@ -37,6 +41,7 @@ export function FieldRenderer({
   }
 
   const renderElement = (element: FieldElement) => {
+    const isSelected = element.id === selectedElementId
     switch (element.type) {
       case 'player':
         return <PlayerToken key={element.id} element={element} {...commonProps} />
@@ -46,17 +51,41 @@ export function FieldRenderer({
         return <ConeToken key={element.id} element={element} {...commonProps} />
       case 'goal':
       case 'mini-goal':
-        return <GoalToken key={element.id} element={element} {...commonProps} />
+        return (
+          <GoalToken
+            key={element.id}
+            element={element}
+            {...commonProps}
+            selected={isSelected}
+            onUpdate={onElementUpdate}
+          />
+        )
       case 'hurdle':
-        return <HurdleToken key={element.id} element={element} {...commonProps} />
+        return (
+          <HurdleToken
+            key={element.id}
+            element={element}
+            {...commonProps}
+            selected={isSelected}
+            onUpdate={onElementUpdate}
+          />
+        )
       case 'arrow':
-        return <ArrowLine key={element.id} element={element} {...commonProps} />
+        return (
+          <ArrowLine
+            key={element.id}
+            element={element}
+            {...commonProps}
+            selected={isSelected}
+            onUpdate={onElementUpdate}
+          />
+        )
       case 'text':
         return <TextNote key={element.id} element={element} {...commonProps} />
     }
   }
 
-  // Flechas debajo de todo, luego el resto
+  // Arrows below everything, then the rest
   const arrows = elements.filter((el) => el.type === 'arrow')
   const nonArrows = elements.filter((el) => el.type !== 'arrow')
 

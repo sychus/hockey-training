@@ -14,7 +14,7 @@ export const COLORS = {
   field: '#2d8a4e',
   fieldLines: '#ffffff',
   ownTeam: '#f5c542',
-  rivalTeam: '#e74c3c',
+  rivalTeam: '#22c55e',
   ball: '#ffffff',
   ballOutline: '#333333',
   cone: '#ff8c00',

@@ -1,4 +1,4 @@
-import { Line, Rect, Group } from 'react-konva'
+import { Line, Rect, Circle, Group } from 'react-konva'
 import type { GoalElement, MiniGoalElement } from '../../../types'
 
 interface GoalTokenProps {
@@ -6,17 +6,24 @@ interface GoalTokenProps {
   fieldWidth: number
   fieldHeight: number
   draggable?: boolean
+  selected?: boolean
   onDragEnd?: (id: string, x: number, y: number) => void
   onSelect?: (id: string) => void
+  onUpdate?: (id: string, updates: Partial<GoalElement | MiniGoalElement>) => void
 }
+
+const HANDLE_RADIUS = 7
+const HANDLE_DISTANCE = 30
 
 export function GoalToken({
   element,
   fieldWidth,
   fieldHeight,
   draggable = false,
+  selected = false,
   onDragEnd,
   onSelect,
+  onUpdate,
 }: GoalTokenProps) {
   const x = (element.x / 100) * fieldWidth
   const y = (element.y / 100) * fieldHeight
@@ -40,7 +47,7 @@ export function GoalToken({
       onClick={() => onSelect?.(element.id)}
       onTap={() => onSelect?.(element.id)}
     >
-      {/* Net background (light fill so it's visible on green) */}
+      {/* Net background */}
       <Rect
         x={-halfW}
         y={-goalH}
@@ -48,7 +55,7 @@ export function GoalToken({
         height={goalH}
         fill="rgba(255,255,255,0.15)"
       />
-      {/* Net pattern (horizontal lines) */}
+      {/* Net pattern */}
       {Array.from({ length: 3 }, (_, i) => {
         const ny = -goalH + ((i + 1) * goalH) / 4
         return (
@@ -60,14 +67,9 @@ export function GoalToken({
           />
         )
       })}
-      {/* Posts: U-shape open at bottom */}
+      {/* Posts: U-shape */}
       <Line
-        points={[
-          -halfW, 0,
-          -halfW, -goalH,
-          halfW, -goalH,
-          halfW, 0,
-        ]}
+        points={[-halfW, 0, -halfW, -goalH, halfW, -goalH, halfW, 0]}
         stroke="#ffffff"
         strokeWidth={postWidth}
         lineCap="round"
@@ -80,6 +82,68 @@ export function GoalToken({
         strokeWidth={postWidth + 1}
         lineCap="round"
       />
+
+      {/* Rotation handle — visible when selected */}
+      {selected && draggable && (
+        <RotationHandle
+          distance={HANDLE_DISTANCE}
+          radius={HANDLE_RADIUS}
+          parentX={x}
+          parentY={y}
+          onRotate={(rotation) => onUpdate?.(element.id, { rotation })}
+        />
+      )}
     </Group>
+  )
+}
+
+function RotationHandle({
+  distance,
+  radius,
+  parentX,
+  parentY,
+  onRotate,
+}: {
+  distance: number
+  radius: number
+  parentX: number
+  parentY: number
+  onRotate: (rotation: number) => void
+}) {
+  return (
+    <>
+      {/* Line from center to handle */}
+      <Line
+        points={[0, 0, 0, -distance]}
+        stroke="#3b82f6"
+        strokeWidth={1.5}
+        dash={[4, 3]}
+      />
+      {/* The draggable rotation knob */}
+      <Circle
+        x={0}
+        y={-distance}
+        radius={radius}
+        fill="#3b82f6"
+        stroke="#fff"
+        strokeWidth={2}
+        draggable
+        onDragMove={(e) => {
+          // Calculate angle from parent center to drag position
+          // We need to account for the group's own rotation to get world coords
+          const stage = e.target.getStage()
+          if (!stage) return
+          const pointer = stage.getPointerPosition()
+          if (!pointer) return
+          const angle = Math.atan2(pointer.y - parentY, pointer.x - parentX)
+          // Convert to degrees, offset by 90 because "up" is the default direction
+          const degrees = (angle * 180) / Math.PI + 90
+          onRotate(degrees)
+          // Reset handle position (the parent group rotation will reposition it)
+          e.target.x(0)
+          e.target.y(-distance)
+        }}
+      />
+    </>
   )
 }
