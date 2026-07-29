@@ -24,7 +24,6 @@ export function EditorLayout() {
 
   const { saving, lastSaved, error: saveError } = useAutoSave()
   const [previewMode, setPreviewMode] = useState(false)
-  const [editMode, setEditMode] = useState(true) // true = edit, false = scroll
 
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
@@ -139,26 +138,11 @@ export function EditorLayout() {
           </button>
         </div>
 
-        {/* Toolbar + mode toggle */}
-        <div className="w-full flex items-center gap-2">
-          <div className="flex-1 min-w-0">
-            <ElementToolbar />
-          </div>
-          {/* Mode toggle — only visible on touch devices / small screens */}
-          <button
-            onClick={() => setEditMode(!editMode)}
-            className={`md:hidden shrink-0 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${
-              editMode
-                ? 'bg-blue-600 text-white'
-                : 'bg-yellow-600 text-white'
-            }`}
-          >
-            {editMode ? '✏️ Editar' : '☝️ Mover'}
-          </button>
-        </div>
+        {/* Toolbar */}
+        <ElementToolbar />
 
         {/* Field canvas */}
-        <div ref={containerRef} className="w-full flex justify-center relative">
+        <div ref={containerRef} className="w-full flex justify-center">
           {noPlaySelected ? (
             <div
               className="flex items-center justify-center border-2 border-dashed border-gray-700 rounded-lg text-gray-500 text-sm text-center p-4"
@@ -167,57 +151,45 @@ export function EditorLayout() {
               Seleccioná o creá una jugada para empezar
             </div>
           ) : (
-            <>
-              <Stage
-                ref={stageRef}
+            <Stage
+              ref={stageRef}
+              width={fieldWidth}
+              height={fieldHeight}
+              onClick={(e) => {
+                const pos = e.target.getStage()?.getPointerPosition()
+                if (pos) {
+                  setLastTapPosition(
+                    (pos.x / fieldWidth) * 100,
+                    (pos.y / fieldHeight) * 100,
+                  )
+                }
+              }}
+              onTap={(e) => {
+                const pos = e.target.getStage()?.getPointerPosition()
+                if (pos) {
+                  setLastTapPosition(
+                    (pos.x / fieldWidth) * 100,
+                    (pos.y / fieldHeight) * 100,
+                  )
+                }
+              }}
+            >
+              <FieldRenderer
                 width={fieldWidth}
                 height={fieldHeight}
-                style={editMode ? undefined : { pointerEvents: 'none' }}
-                onClick={(e) => {
-                  const pos = e.target.getStage()?.getPointerPosition()
-                  if (pos) {
-                    setLastTapPosition(
-                      (pos.x / fieldWidth) * 100,
-                      (pos.y / fieldHeight) * 100,
-                    )
-                  }
-                }}
-                onTap={(e) => {
-                  const pos = e.target.getStage()?.getPointerPosition()
-                  if (pos) {
-                    setLastTapPosition(
-                      (pos.x / fieldWidth) * 100,
-                      (pos.y / fieldHeight) * 100,
-                    )
-                  }
-                }}
-              >
-                <FieldRenderer
-                  width={fieldWidth}
-                  height={fieldHeight}
-                  elements={currentElements}
-                  draggable={editMode}
-                  selectedElementId={selectedElementId}
-                  onElementDragEnd={handleDragEnd}
-                  onElementSelect={selectElement}
-                  onElementUpdate={updateElement}
-                />
-              </Stage>
-
-              {/* Scroll mode indicator overlay */}
-              {!editMode && (
-                <div className="absolute inset-0 flex items-start justify-center pt-2 pointer-events-none">
-                  <span className="bg-yellow-600/80 text-white text-xs px-3 py-1 rounded-full">
-                    Modo mover — deslizá para scrollear
-                  </span>
-                </div>
-              )}
-            </>
+                elements={currentElements}
+                draggable
+                selectedElementId={selectedElementId}
+                onElementDragEnd={handleDragEnd}
+                onElementSelect={selectElement}
+                onElementUpdate={updateElement}
+              />
+            </Stage>
           )}
         </div>
 
         {/* Contextual actions for selected element */}
-        {selectedElement && editMode && (
+        {selectedElement && (
           <SelectedElementActions
             element={selectedElement}
             onDelete={(id) => removeElement(id)}

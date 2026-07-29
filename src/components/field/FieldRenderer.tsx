@@ -99,7 +99,7 @@ export function FieldRenderer({
 
   return (
     <>
-      <Layer>
+      <Layer listening={false}>
         <HockeyField width={width} height={height} />
       </Layer>
       <Layer>
