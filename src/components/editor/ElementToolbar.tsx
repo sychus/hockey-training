@@ -41,14 +41,14 @@ export function ElementToolbar() {
   const disabled = activePlayIndex < 0 || activeStepIndex < 0
 
   return (
-    <div className="flex flex-wrap gap-1 p-2 bg-gray-800 rounded-lg">
+    <div className="flex flex-wrap gap-1 p-1.5 md:p-2 bg-gray-800 rounded-lg w-full justify-center">
       {TOOLS.map((tool) => (
         <button
           key={tool.label}
           title={tool.label}
           disabled={disabled}
           onClick={() => addElement(tool.action())}
-          className="w-10 h-10 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed text-lg"
+          className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed text-base md:text-lg"
         >
           {tool.icon}
         </button>

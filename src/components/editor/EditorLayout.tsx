@@ -22,7 +22,7 @@ export function EditorLayout() {
   const [previewMode, setPreviewMode] = useState(false)
 
   const containerRef = useRef<HTMLDivElement>(null)
-  const [fieldWidth, setFieldWidth] = useState(500)
+  const [fieldWidth, setFieldWidth] = useState(350)
 
   useEffect(() => {
     const updateSize = () => {
@@ -83,19 +83,19 @@ export function EditorLayout() {
   }
 
   return (
-    <div className="flex gap-4 p-4 bg-gray-950 min-h-screen">
-      {/* Panel izquierdo: lista de jugadas */}
+    <div className="flex flex-col md:flex-row gap-3 md:gap-4 p-3 md:p-4 bg-gray-950 min-h-screen">
+      {/* Play list: collapsible bar on mobile, sidebar on desktop */}
       <PlayListPanel />
 
       {/* Centro: cancha + controles */}
-      <div className="flex-1 flex flex-col gap-3 items-center">
-        <div className="w-full flex items-start gap-3">
-          <div className="flex-1">
+      <div className="flex-1 flex flex-col gap-2 md:gap-3 items-center">
+        <div className="w-full flex items-start gap-2">
+          <div className="flex-1 min-w-0">
             <input
               type="text"
               value={session.title}
               onChange={(e) => useEditorStore.getState().updateSessionTitle(e.target.value)}
-              className="bg-transparent text-white text-xl font-bold border-b border-gray-700 focus:border-blue-500 outline-none w-full pb-1"
+              className="bg-transparent text-white text-lg md:text-xl font-bold border-b border-gray-700 focus:border-blue-500 outline-none w-full pb-1"
             />
             <div className="text-xs mt-1">
               {saveError ? (
@@ -112,7 +112,7 @@ export function EditorLayout() {
           <button
             onClick={() => setPreviewMode(true)}
             disabled={session.plays.length === 0}
-            className="px-3 py-1 rounded bg-purple-700 hover:bg-purple-600 text-white text-sm disabled:opacity-30 shrink-0"
+            className="px-2 py-1 md:px-3 rounded bg-purple-700 hover:bg-purple-600 text-white text-xs md:text-sm disabled:opacity-30 shrink-0"
           >
             Vista jugador
           </button>
@@ -123,7 +123,7 @@ export function EditorLayout() {
         <div ref={containerRef} className="w-full flex justify-center">
           {noPlaySelected ? (
             <div
-              className="flex items-center justify-center border-2 border-dashed border-gray-700 rounded-lg text-gray-500"
+              className="flex items-center justify-center border-2 border-dashed border-gray-700 rounded-lg text-gray-500 text-sm text-center p-4"
               style={{ width: fieldWidth, height: fieldHeight }}
             >
               Seleccioná o creá una jugada para empezar
