@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, useEffect } from 'react'
 import { Stage } from 'react-konva'
-import Konva from 'konva'
+import type Konva from 'konva'
 import { FieldRenderer } from '../field/FieldRenderer'
 import { PlayListPanel } from './PlayListPanel'
 import { StepNavigator } from './StepNavigator'
@@ -25,50 +25,32 @@ export function EditorLayout() {
   const { saving, lastSaved, error: saveError } = useAutoSave()
   const [previewMode, setPreviewMode] = useState(false)
 
-  const containerRef = useRef<HTMLDivElement>(null)
+  const fieldContainerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
-  const [fieldWidth, setFieldWidth] = useState(350)
+  const [fieldSize, setFieldSize] = useState({ w: 300, h: 500 })
 
+  // Calculate field size to FIT the available space while keeping FIH aspect ratio
   useEffect(() => {
     const updateSize = () => {
-      if (containerRef.current) {
-        const available = containerRef.current.clientWidth
-        setFieldWidth(Math.min(available, 600))
+      if (!fieldContainerRef.current) return
+      const rect = fieldContainerRef.current.getBoundingClientRect()
+      const availW = rect.width
+      const availH = rect.height
+
+      // Fit within available space keeping aspect ratio
+      let w = availW
+      let h = w * FIELD.ASPECT_RATIO
+      if (h > availH) {
+        h = availH
+        w = h / FIELD.ASPECT_RATIO
       }
+
+      setFieldSize({ w: Math.floor(w), h: Math.floor(h) })
     }
     updateSize()
     window.addEventListener('resize', updateSize)
     return () => window.removeEventListener('resize', updateSize)
   }, [])
-
-  // Mobile scroll fix: Konva calls preventDefault() on ALL touch events,
-  // which blocks page scrolling. We override Konva's internal handler to
-  // only preventDefault when the touch is on a draggable element.
-  useEffect(() => {
-    const stage = stageRef.current
-    if (!stage) return
-
-    const content = stage.content
-    if (!content) return
-
-    // Konva adds its touchstart/touchmove handlers to stage.content.
-    // We add our own handler BEFORE Konva's (capture phase) to cancel
-    // Konva's preventDefault for touches on empty areas.
-    const handleTouchMove = (e: TouchEvent) => {
-      // If Konva is actively dragging something, let it preventDefault
-      if (Konva.isDragging()) return
-      // Otherwise, stop Konva from blocking the scroll
-      e.stopImmediatePropagation()
-    }
-
-    content.addEventListener('touchmove', handleTouchMove, { capture: true, passive: true })
-
-    return () => {
-      content.removeEventListener('touchmove', handleTouchMove, { capture: true } as EventListenerOptions)
-    }
-  })
-
-  const fieldHeight = Math.round(fieldWidth * FIELD.ASPECT_RATIO)
 
   const currentElements =
     activePlayIndex >= 0 && activeStepIndex >= 0
@@ -86,7 +68,6 @@ export function EditorLayout() {
     [moveElement],
   )
 
-  // Keyboard delete — only when focus is NOT in an input
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -130,22 +111,24 @@ export function EditorLayout() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 bg-gray-950 min-h-screen">
+    <div className="flex flex-col md:flex-row h-[100dvh] bg-gray-950 overflow-hidden">
       {/* Play list */}
-      <PlayListPanel />
+      <div className="shrink-0">
+        <PlayListPanel />
+      </div>
 
-      {/* Center: field + controls */}
-      <div className="flex-1 flex flex-col gap-1.5 md:gap-3 items-center">
+      {/* Center: field + controls — fills remaining space */}
+      <div className="flex-1 flex flex-col min-h-0 p-2 md:p-4 gap-1.5 md:gap-2">
         {/* Title row */}
-        <div className="w-full flex items-start gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <div className="flex-1 min-w-0">
             <input
               type="text"
               value={session.title}
               onChange={(e) => useEditorStore.getState().updateSessionTitle(e.target.value)}
-              className="bg-transparent text-white text-lg md:text-xl font-bold border-b border-gray-700 focus:border-blue-500 outline-none w-full pb-1"
+              className="bg-transparent text-white text-base md:text-xl font-bold border-b border-gray-700 focus:border-blue-500 outline-none w-full pb-0.5"
             />
-            <div className="text-xs mt-0.5">
+            <div className="text-[10px] mt-0.5">
               {saveError ? (
                 <span className="text-red-400">{saveError}</span>
               ) : saving ? (
@@ -160,35 +143,34 @@ export function EditorLayout() {
           <button
             onClick={() => setPreviewMode(true)}
             disabled={session.plays.length === 0}
-            className="px-2 py-1 md:px-3 rounded bg-purple-700 hover:bg-purple-600 text-white text-xs md:text-sm disabled:opacity-30 shrink-0"
+            className="px-2 py-1 rounded bg-purple-700 hover:bg-purple-600 text-white text-xs disabled:opacity-30 shrink-0"
           >
             Vista jugador
           </button>
         </div>
 
         {/* Toolbar */}
-        <ElementToolbar />
+        <div className="shrink-0">
+          <ElementToolbar />
+        </div>
 
-        {/* Field canvas */}
-        <div ref={containerRef} className="w-full flex justify-center">
+        {/* Field — takes ALL remaining vertical space */}
+        <div ref={fieldContainerRef} className="flex-1 flex justify-center items-center min-h-0">
           {noPlaySelected ? (
-            <div
-              className="flex items-center justify-center border-2 border-dashed border-gray-700 rounded-lg text-gray-500 text-sm text-center p-4"
-              style={{ width: fieldWidth, height: fieldHeight }}
-            >
+            <div className="text-gray-500 text-sm text-center p-4">
               Seleccioná o creá una jugada para empezar
             </div>
           ) : (
             <Stage
               ref={stageRef}
-              width={fieldWidth}
-              height={fieldHeight}
+              width={fieldSize.w}
+              height={fieldSize.h}
               onClick={(e) => {
                 const pos = e.target.getStage()?.getPointerPosition()
                 if (pos) {
                   setLastTapPosition(
-                    (pos.x / fieldWidth) * 100,
-                    (pos.y / fieldHeight) * 100,
+                    (pos.x / fieldSize.w) * 100,
+                    (pos.y / fieldSize.h) * 100,
                   )
                 }
               }}
@@ -196,15 +178,15 @@ export function EditorLayout() {
                 const pos = e.target.getStage()?.getPointerPosition()
                 if (pos) {
                   setLastTapPosition(
-                    (pos.x / fieldWidth) * 100,
-                    (pos.y / fieldHeight) * 100,
+                    (pos.x / fieldSize.w) * 100,
+                    (pos.y / fieldSize.h) * 100,
                   )
                 }
               }}
             >
               <FieldRenderer
-                width={fieldWidth}
-                height={fieldHeight}
+                width={fieldSize.w}
+                height={fieldSize.h}
                 elements={currentElements}
                 draggable
                 selectedElementId={selectedElementId}
@@ -217,18 +199,28 @@ export function EditorLayout() {
         </div>
 
         {/* Contextual actions for selected element */}
-        <SelectedElementActions
-          element={selectedElement}
-          onDelete={(id) => removeElement(id)}
-          onUpdate={(id, updates) => updateElement(id, updates)}
-          onDeselect={() => selectElement(null)}
-        />
+        {selectedElement && (
+          <div className="shrink-0">
+            <SelectedElementActions
+              element={selectedElement}
+              onDelete={(id) => removeElement(id)}
+              onUpdate={(id, updates) => updateElement(id, updates)}
+              onDeselect={() => selectElement(null)}
+            />
+          </div>
+        )}
 
         {/* Step navigator */}
-        <StepNavigator />
+        <div className="shrink-0">
+          <StepNavigator />
+        </div>
 
         {/* Play notes */}
-        {!noPlaySelected && <PlayNotes />}
+        {!noPlaySelected && (
+          <div className="shrink-0">
+            <PlayNotes />
+          </div>
+        )}
       </div>
     </div>
   )
@@ -252,17 +244,15 @@ function PlayNotes() {
   if (!play) return null
 
   return (
-    <div className="w-full">
-      <textarea
-        value={localNotes}
-        onChange={(e) => {
-          setLocalNotes(e.target.value)
-          updatePlayNotes(play.id, e.target.value)
-        }}
-        placeholder="Notas tacticas de esta jugada..."
-        rows={2}
-        className="w-full px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm placeholder:text-gray-600 outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-      />
-    </div>
+    <textarea
+      value={localNotes}
+      onChange={(e) => {
+        setLocalNotes(e.target.value)
+        updatePlayNotes(play.id, e.target.value)
+      }}
+      placeholder="Notas tacticas de esta jugada..."
+      rows={2}
+      className="w-full px-3 py-1.5 rounded bg-gray-800 text-gray-300 text-xs placeholder:text-gray-600 outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+    />
   )
 }
