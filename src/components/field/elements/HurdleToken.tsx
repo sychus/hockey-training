@@ -63,6 +63,7 @@ export function HurdleToken({
             stroke="#3b82f6"
             strokeWidth={1.5}
             dash={[4, 3]}
+            listening={false}
           />
           <Circle
             x={0}
@@ -72,7 +73,7 @@ export function HurdleToken({
             stroke="#fff"
             strokeWidth={2}
             draggable
-            onDragMove={(e) => {
+            onDragEnd={(e) => {
               const stage = e.target.getStage()
               if (!stage) return
               const pointer = stage.getPointerPosition()
@@ -80,8 +81,7 @@ export function HurdleToken({
               const angle = Math.atan2(pointer.y - y, pointer.x - x)
               const degrees = (angle * 180) / Math.PI + 90
               onUpdate?.(element.id, { rotation: degrees })
-              e.target.x(0)
-              e.target.y(-HANDLE_DISTANCE)
+              e.target.position({ x: 0, y: -HANDLE_DISTANCE })
             }}
           />
         </>

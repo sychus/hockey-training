@@ -1,4 +1,4 @@
-import { Arrow, Circle, Group } from 'react-konva'
+import { Arrow, Circle, Line, Group } from 'react-konva'
 import { COLORS } from '../../../lib/constants'
 import type { ArrowElement } from '../../../types'
 
@@ -22,7 +22,6 @@ const ARROW_STYLE_CONFIG: Record<ArrowElement['style'], { color: string; dash?: 
 }
 
 const HANDLE_RADIUS = 7
-const HANDLE_COLOR = '#3b82f6'
 
 export function ArrowLine({
   element,
@@ -41,46 +40,64 @@ export function ArrowLine({
 
   const config = ARROW_STYLE_CONFIG[element.style]
 
+  // Relative end point from the group origin (fromX, fromY)
+  const relToX = toX - fromX
+  const relToY = toY - fromY
+
   return (
     <Group>
-      {/* The arrow line itself — not draggable directly, use handles */}
-      <Arrow
-        points={[fromX, fromY, toX, toY]}
-        stroke={config.color}
-        strokeWidth={selected ? 3.5 : 2.5}
-        fill={config.color}
-        pointerLength={8}
-        pointerWidth={6}
-        dash={config.dash}
-        hitStrokeWidth={20}
+      {/* Draggable group wrapping the arrow — moves the whole arrow */}
+      <Group
+        x={fromX}
+        y={fromY}
+        draggable={draggable}
+        onDragEnd={(e) => {
+          const newX = (e.target.x() / fieldWidth) * 100
+          const newY = (e.target.y() / fieldHeight) * 100
+          onDragEnd?.(element.id, newX, newY)
+        }}
         onClick={() => onSelect?.(element.id)}
         onTap={() => onSelect?.(element.id)}
-      />
+      >
+        <Arrow
+          points={[0, 0, relToX, relToY]}
+          stroke={config.color}
+          strokeWidth={selected ? 3.5 : 2.5}
+          fill={config.color}
+          pointerLength={8}
+          pointerWidth={6}
+          dash={config.dash}
+          hitStrokeWidth={20}
+        />
+      </Group>
 
-      {/* Drag handles — only visible when selected AND in edit mode */}
+      {/* Endpoint handles — only when selected */}
       {selected && draggable && (
         <>
-          {/* Start handle — moves the whole arrow */}
+          {/* Start handle (blue) — moves start point only */}
           <Circle
             x={fromX}
             y={fromY}
             radius={HANDLE_RADIUS}
-            fill={HANDLE_COLOR}
+            fill="#3b82f6"
             stroke="#fff"
             strokeWidth={2}
             draggable
-            onDragMove={(e) => {
-              const newX = (e.target.x() / fieldWidth) * 100
-              const newY = (e.target.y() / fieldHeight) * 100
-              onUpdate?.(element.id, { x: newX, y: newY })
-            }}
             onDragEnd={(e) => {
               const newX = (e.target.x() / fieldWidth) * 100
               const newY = (e.target.y() / fieldHeight) * 100
               onUpdate?.(element.id, { x: newX, y: newY })
             }}
           />
-          {/* End handle — changes direction/length */}
+          {/* Dashed line showing the connection */}
+          <Line
+            points={[fromX, fromY, toX, toY]}
+            stroke="rgba(255,255,255,0.2)"
+            strokeWidth={1}
+            dash={[4, 4]}
+            listening={false}
+          />
+          {/* End handle (red) — changes direction/length */}
           <Circle
             x={toX}
             y={toY}
@@ -89,11 +106,6 @@ export function ArrowLine({
             stroke="#fff"
             strokeWidth={2}
             draggable
-            onDragMove={(e) => {
-              const newToX = (e.target.x() / fieldWidth) * 100
-              const newToY = (e.target.y() / fieldHeight) * 100
-              onUpdate?.(element.id, { toX: newToX, toY: newToY })
-            }}
             onDragEnd={(e) => {
               const newToX = (e.target.x() / fieldWidth) * 100
               const newToY = (e.target.y() / fieldHeight) * 100
@@ -101,32 +113,6 @@ export function ArrowLine({
             }}
           />
         </>
-      )}
-
-      {/* When NOT selected but draggable, invisible grab area at midpoint */}
-      {!selected && draggable && (
-        <Circle
-          x={(fromX + toX) / 2}
-          y={(fromY + toY) / 2}
-          radius={12}
-          fill="transparent"
-          draggable
-          onDragEnd={(e) => {
-            // Move the whole arrow by delta from midpoint
-            const midX = (fromX + toX) / 2
-            const midY = (fromY + toY) / 2
-            const dx = e.target.x() - midX
-            const dy = e.target.y() - midY
-            const newX = element.x + (dx / fieldWidth) * 100
-            const newY = element.y + (dy / fieldHeight) * 100
-            // Reset the circle position (it moved in pixel space)
-            e.target.x(midX)
-            e.target.y(midY)
-            onDragEnd?.(element.id, newX, newY)
-          }}
-          onClick={() => onSelect?.(element.id)}
-          onTap={() => onSelect?.(element.id)}
-        />
       )}
     </Group>
   )

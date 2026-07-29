@@ -23,14 +23,29 @@ interface ToolGroup {
   tools: Tool[]
 }
 
-function ColorDot({ color, letter }: { color: string; letter?: string }) {
+/**
+ * SVG player icon that matches the canvas PlayerToken:
+ * head with hair + ponytails, colored jersey with label
+ */
+function PlayerIcon({ jerseyColor, label }: { jerseyColor: string; label: string }) {
+  const darkJersey = jerseyColor === '#f5c542'
+  const textColor = darkJersey ? '#1a1a00' : '#ffffff'
+  const hairColor = '#5c3317'
   return (
-    <span
-      className="inline-flex items-center justify-center rounded-full text-[10px] font-bold leading-none"
-      style={{ width: 22, height: 22, background: color, color: color === '#f5c542' ? '#1a1a00' : '#fff' }}
-    >
-      {letter ?? ''}
-    </span>
+    <svg width="24" height="28" viewBox="0 0 24 28">
+      {/* Hair cap */}
+      <ellipse cx="12" cy="6" rx="5" ry="3" fill={hairColor} />
+      {/* Head */}
+      <circle cx="12" cy="7" r="4" fill="#ffe0bd" stroke="#c4a882" strokeWidth="0.5" />
+      {/* Ponytail left */}
+      <path d="M8,6 Q5,12 6,15" stroke={hairColor} strokeWidth="2" fill="none" strokeLinecap="round" />
+      {/* Ponytail right */}
+      <path d="M16,6 Q19,12 18,15" stroke={hairColor} strokeWidth="2" fill="none" strokeLinecap="round" />
+      {/* Jersey body */}
+      <ellipse cx="12" cy="19" rx="8" ry="7" fill={jerseyColor} stroke={darkJersey ? '#c8a000' : '#16a34a'} strokeWidth="1" />
+      {/* Label on jersey */}
+      <text x="12" y="21" textAnchor="middle" fontSize="8" fontWeight="bold" fill={textColor}>{label}</text>
+    </svg>
   )
 }
 
@@ -51,8 +66,8 @@ const TOOL_GROUPS: ToolGroup[] = [
   {
     title: 'Jugadoras',
     tools: [
-      { label: 'Jugadora propia', icon: <ColorDot color="#f5c542" letter="P" />, action: () => createPlayer({ x: 50, y: 50, team: 'own', label: '?' }) },
-      { label: 'Jugadora rival', icon: <ColorDot color="#22c55e" letter="R" />, action: () => createPlayer({ x: 50, y: 50, team: 'rival', label: '?' }) },
+      { label: 'Jugadora propia', icon: <PlayerIcon jerseyColor="#f5c542" label="P" />, action: () => createPlayer({ x: 50, y: 50, team: 'own', label: '?' }) },
+      { label: 'Jugadora rival', icon: <PlayerIcon jerseyColor="#22c55e" label="R" />, action: () => createPlayer({ x: 50, y: 50, team: 'rival', label: '?' }) },
     ],
   },
   {
@@ -60,7 +75,7 @@ const TOOL_GROUPS: ToolGroup[] = [
     tools: [
       { label: 'Pelota', icon: <span className="w-4 h-4 rounded-full bg-white border border-gray-400 inline-block" />, action: () => createBall({ x: 50, y: 50 }) },
       { label: 'Cono', icon: <span className="text-orange-500 text-lg leading-none">▲</span>, action: () => createCone({ x: 50, y: 50 }) },
-      { label: 'Arco', icon: <span className="text-white text-base leading-none">⊓</span>, action: () => createGoal({ x: 50, y: 10 }) },
+      { label: 'Arco', icon: <span className="text-white text-base leading-none font-bold">⊓</span>, action: () => createGoal({ x: 50, y: 10 }) },
       { label: 'Mini arco', icon: <span className="text-yellow-400 text-sm leading-none">⊓</span>, action: () => createMiniGoal({ x: 50, y: 50 }) },
       { label: 'Valla', icon: <span className="text-red-400 text-lg leading-none">▬</span>, action: () => createHurdle({ x: 50, y: 50 }) },
     ],

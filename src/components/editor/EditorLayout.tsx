@@ -148,23 +148,29 @@ export function EditorLayout() {
         <StepNavigator />
 
         {/* Play notes */}
-        {!noPlaySelected && activePlayIndex >= 0 && session.plays[activePlayIndex] && (
-          <div className="w-full">
-            <textarea
-              value={session.plays[activePlayIndex].notes ?? ''}
-              onChange={(e) =>
-                useEditorStore.getState().updatePlayNotes(
-                  session.plays[activePlayIndex].id,
-                  e.target.value,
-                )
-              }
-              placeholder="Notas tácticas de esta jugada..."
-              rows={2}
-              className="w-full px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm placeholder:text-gray-600 outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-            />
-          </div>
+        {!noPlaySelected && session.plays[activePlayIndex] && (
+          <PlayNotes
+            playId={session.plays[activePlayIndex].id}
+            notes={session.plays[activePlayIndex].notes ?? ''}
+          />
         )}
       </div>
+    </div>
+  )
+}
+
+function PlayNotes({ playId, notes }: { playId: string; notes: string }) {
+  const updatePlayNotes = useEditorStore((s) => s.updatePlayNotes)
+
+  return (
+    <div className="w-full">
+      <textarea
+        value={notes}
+        onChange={(e) => updatePlayNotes(playId, e.target.value)}
+        placeholder="Notas tacticas de esta jugada..."
+        rows={2}
+        className="w-full px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm placeholder:text-gray-600 outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+      />
     </div>
   )
 }

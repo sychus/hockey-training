@@ -85,65 +85,36 @@ export function GoalToken({
 
       {/* Rotation handle — visible when selected */}
       {selected && draggable && (
-        <RotationHandle
-          distance={HANDLE_DISTANCE}
-          radius={HANDLE_RADIUS}
-          parentX={x}
-          parentY={y}
-          onRotate={(rotation) => onUpdate?.(element.id, { rotation })}
-        />
+        <>
+          <Line
+            points={[0, 0, 0, -HANDLE_DISTANCE]}
+            stroke="#3b82f6"
+            strokeWidth={1.5}
+            dash={[4, 3]}
+            listening={false}
+          />
+          <Circle
+            x={0}
+            y={-HANDLE_DISTANCE}
+            radius={HANDLE_RADIUS}
+            fill="#3b82f6"
+            stroke="#fff"
+            strokeWidth={2}
+            draggable
+            onDragEnd={(e) => {
+              const stage = e.target.getStage()
+              if (!stage) return
+              const pointer = stage.getPointerPosition()
+              if (!pointer) return
+              const angle = Math.atan2(pointer.y - y, pointer.x - x)
+              const degrees = (angle * 180) / Math.PI + 90
+              onUpdate?.(element.id, { rotation: degrees })
+              // Reset handle to its local position
+              e.target.position({ x: 0, y: -HANDLE_DISTANCE })
+            }}
+          />
+        </>
       )}
     </Group>
-  )
-}
-
-function RotationHandle({
-  distance,
-  radius,
-  parentX,
-  parentY,
-  onRotate,
-}: {
-  distance: number
-  radius: number
-  parentX: number
-  parentY: number
-  onRotate: (rotation: number) => void
-}) {
-  return (
-    <>
-      {/* Line from center to handle */}
-      <Line
-        points={[0, 0, 0, -distance]}
-        stroke="#3b82f6"
-        strokeWidth={1.5}
-        dash={[4, 3]}
-      />
-      {/* The draggable rotation knob */}
-      <Circle
-        x={0}
-        y={-distance}
-        radius={radius}
-        fill="#3b82f6"
-        stroke="#fff"
-        strokeWidth={2}
-        draggable
-        onDragMove={(e) => {
-          // Calculate angle from parent center to drag position
-          // We need to account for the group's own rotation to get world coords
-          const stage = e.target.getStage()
-          if (!stage) return
-          const pointer = stage.getPointerPosition()
-          if (!pointer) return
-          const angle = Math.atan2(pointer.y - parentY, pointer.x - parentX)
-          // Convert to degrees, offset by 90 because "up" is the default direction
-          const degrees = (angle * 180) / Math.PI + 90
-          onRotate(degrees)
-          // Reset handle position (the parent group rotation will reposition it)
-          e.target.x(0)
-          e.target.y(-distance)
-        }}
-      />
-    </>
   )
 }
