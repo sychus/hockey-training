@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, useEffect } from 'react'
 import { Stage } from 'react-konva'
+import type Konva from 'konva'
 import { FieldRenderer } from '../field/FieldRenderer'
 import { PlayListPanel } from './PlayListPanel'
 import { StepNavigator } from './StepNavigator'
@@ -25,7 +26,9 @@ export function EditorLayout() {
   const [previewMode, setPreviewMode] = useState(false)
 
   const containerRef = useRef<HTMLDivElement>(null)
+  const stageRef = useRef<Konva.Stage>(null)
   const [fieldWidth, setFieldWidth] = useState(350)
+  const isDraggingElement = useRef(false)
 
   useEffect(() => {
     const updateSize = () => {
@@ -38,6 +41,43 @@ export function EditorLayout() {
     window.addEventListener('resize', updateSize)
     return () => window.removeEventListener('resize', updateSize)
   }, [])
+
+  // Allow page scroll when touching empty canvas, block only when dragging elements
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+
+    const container = stage.container()
+
+    const handleTouchStart = (_e: TouchEvent) => {
+      // Check if the touch lands on a Konva shape (not the stage/layer background)
+      const target = stage.getIntersection(stage.getPointerPosition()!)
+      if (target && target.getClassName() !== 'Stage' && target.getParent()?.getClassName() !== 'Layer') {
+        // Touching an element — let Konva handle it (drag)
+        isDraggingElement.current = true
+      } else {
+        // Touching empty canvas — let browser scroll
+        isDraggingElement.current = false
+      }
+    }
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDraggingElement.current) {
+        // Don't prevent default — browser handles scroll
+        return
+      }
+      // Konva is handling the drag, prevent scroll
+      e.preventDefault()
+    }
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: true })
+    container.addEventListener('touchmove', handleTouchMove, { passive: false })
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart)
+      container.removeEventListener('touchmove', handleTouchMove)
+    }
+  })
 
   const fieldHeight = Math.round(fieldWidth * FIELD.ASPECT_RATIO)
 
@@ -53,11 +93,12 @@ export function EditorLayout() {
   const handleDragEnd = useCallback(
     (id: string, x: number, y: number) => {
       moveElement(id, x, y)
+      isDraggingElement.current = false
     },
     [moveElement],
   )
 
-  // Keyboard delete — only when focus is on body (not in inputs/textareas)
+  // Keyboard delete — only when focus is NOT in an input
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -101,14 +142,14 @@ export function EditorLayout() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 bg-gray-950 h-screen overflow-hidden">
+    <div className="flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 bg-gray-950 min-h-screen">
       {/* Play list */}
       <PlayListPanel />
 
       {/* Center: field + controls */}
-      <div className="flex-1 flex flex-col gap-1.5 md:gap-3 items-center min-h-0">
+      <div className="flex-1 flex flex-col gap-1.5 md:gap-3 items-center">
         {/* Title row */}
-        <div className="w-full flex items-start gap-2 shrink-0">
+        <div className="w-full flex items-start gap-2">
           <div className="flex-1 min-w-0">
             <input
               type="text"
@@ -138,12 +179,10 @@ export function EditorLayout() {
         </div>
 
         {/* Toolbar */}
-        <div className="w-full shrink-0">
-          <ElementToolbar />
-        </div>
+        <ElementToolbar />
 
-        {/* Field canvas — takes remaining space */}
-        <div ref={containerRef} className="w-full flex-1 flex justify-center items-start min-h-0">
+        {/* Field canvas */}
+        <div ref={containerRef} className="w-full flex justify-center">
           {noPlaySelected ? (
             <div
               className="flex items-center justify-center border-2 border-dashed border-gray-700 rounded-lg text-gray-500 text-sm text-center p-4"
@@ -153,11 +192,11 @@ export function EditorLayout() {
             </div>
           ) : (
             <Stage
+              ref={stageRef}
               width={fieldWidth}
               height={fieldHeight}
               onClick={(e) => {
-                const stage = e.target.getStage()
-                const pos = stage?.getPointerPosition()
+                const pos = e.target.getStage()?.getPointerPosition()
                 if (pos) {
                   setLastTapPosition(
                     (pos.x / fieldWidth) * 100,
@@ -166,8 +205,7 @@ export function EditorLayout() {
                 }
               }}
               onTap={(e) => {
-                const stage = e.target.getStage()
-                const pos = stage?.getPointerPosition()
+                const pos = e.target.getStage()?.getPointerPosition()
                 if (pos) {
                   setLastTapPosition(
                     (pos.x / fieldWidth) * 100,
@@ -199,9 +237,7 @@ export function EditorLayout() {
         />
 
         {/* Step navigator */}
-        <div className="w-full shrink-0">
-          <StepNavigator />
-        </div>
+        <StepNavigator />
 
         {/* Play notes */}
         {!noPlaySelected && <PlayNotes />}
@@ -228,7 +264,7 @@ function PlayNotes() {
   if (!play) return null
 
   return (
-    <div className="w-full shrink-0">
+    <div className="w-full">
       <textarea
         value={localNotes}
         onChange={(e) => {

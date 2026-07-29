@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Stage } from 'react-konva'
+import type Konva from 'konva'
 import { FieldRenderer } from '../field/FieldRenderer'
 import { PlaybackControls } from './PlaybackControls'
 import { useAnimation } from '../../hooks/useAnimation'
@@ -13,6 +14,7 @@ interface SessionViewerProps {
 export function SessionViewer({ session }: SessionViewerProps) {
   const [activePlayIndex, setActivePlayIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
+  const stageRef = useRef<Konva.Stage>(null)
   const [fieldWidth, setFieldWidth] = useState(350)
 
   const currentPlay = session.plays[activePlayIndex]
@@ -27,6 +29,14 @@ export function SessionViewer({ session }: SessionViewerProps) {
     window.addEventListener('resize', updateSize)
     return () => window.removeEventListener('resize', updateSize)
   }, [])
+
+  // Viewer has no draggable elements — let all touches pass through for scrolling
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    const content = stage.container()
+    content.style.touchAction = 'auto'
+  })
 
   const fieldHeight = Math.round(fieldWidth * FIELD.ASPECT_RATIO)
 
@@ -46,16 +56,16 @@ export function SessionViewer({ session }: SessionViewerProps) {
 
   if (session.plays.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-950 text-gray-400">
+      <div className="flex items-center justify-center min-h-screen bg-gray-950 text-gray-400">
         Esta sesión no tiene jugadas todavía.
       </div>
     )
   }
 
   return (
-    <div className="bg-gray-950 h-screen flex flex-col overflow-hidden">
+    <div className="bg-gray-950 min-h-screen flex flex-col">
       {/* Header */}
-      <div className="p-3 text-center shrink-0">
+      <div className="p-3 text-center">
         <h1 className="text-white font-bold text-lg">{session.title}</h1>
         {session.description && (
           <p className="text-gray-400 text-sm mt-1">{session.description}</p>
@@ -64,7 +74,7 @@ export function SessionViewer({ session }: SessionViewerProps) {
 
       {/* Play selector */}
       {session.plays.length > 1 && (
-        <div className="flex overflow-x-auto gap-2 px-4 pb-2 shrink-0">
+        <div className="flex overflow-x-auto gap-2 px-4 pb-2">
           {session.plays.map((play, index) => (
             <button
               key={play.id}
@@ -86,16 +96,16 @@ export function SessionViewer({ session }: SessionViewerProps) {
 
       {/* Play notes */}
       {currentPlay?.notes && (
-        <div className="px-4 pb-2 shrink-0">
+        <div className="px-4 pb-2">
           <p className="text-gray-400 text-xs bg-gray-800 rounded p-2">
             {currentPlay.notes}
           </p>
         </div>
       )}
 
-      {/* Field — fills remaining space */}
-      <div ref={containerRef} className="flex-1 flex justify-center items-center p-2 min-h-0">
-        <Stage width={fieldWidth} height={fieldHeight}>
+      {/* Field */}
+      <div ref={containerRef} className="flex-1 flex justify-center items-center p-2">
+        <Stage ref={stageRef} width={fieldWidth} height={fieldHeight}>
           <FieldRenderer
             width={fieldWidth}
             height={fieldHeight}
@@ -105,18 +115,16 @@ export function SessionViewer({ session }: SessionViewerProps) {
       </div>
 
       {/* Controls */}
-      <div className="shrink-0">
-        <PlaybackControls
-          isPlaying={isPlaying}
-          currentStep={currentStepIndex}
-          totalSteps={currentPlay?.steps.length ?? 0}
-          onPlay={play}
-          onPause={pause}
-          onStop={stop}
-          onNextStep={nextStep}
-          onPrevStep={prevStep}
-        />
-      </div>
+      <PlaybackControls
+        isPlaying={isPlaying}
+        currentStep={currentStepIndex}
+        totalSteps={currentPlay?.steps.length ?? 0}
+        onPlay={play}
+        onPause={pause}
+        onStop={stop}
+        onNextStep={nextStep}
+        onPrevStep={prevStep}
+      />
     </div>
   )
 }
