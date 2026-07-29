@@ -24,33 +24,25 @@ export function EditorLayout() {
 
   const { saving, lastSaved, error: saveError } = useAutoSave()
   const [previewMode, setPreviewMode] = useState(false)
+  const [editMode, setEditMode] = useState(true) // true = edit, false = scroll
 
-  const fieldContainerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
-  const [fieldSize, setFieldSize] = useState({ w: 300, h: 500 })
+  const [fieldWidth, setFieldWidth] = useState(350)
 
-  // Calculate field size to FIT the available space while keeping FIH aspect ratio
   useEffect(() => {
     const updateSize = () => {
-      if (!fieldContainerRef.current) return
-      const rect = fieldContainerRef.current.getBoundingClientRect()
-      const availW = rect.width
-      const availH = rect.height
-
-      // Fit within available space keeping aspect ratio
-      let w = availW
-      let h = w * FIELD.ASPECT_RATIO
-      if (h > availH) {
-        h = availH
-        w = h / FIELD.ASPECT_RATIO
+      if (containerRef.current) {
+        const available = containerRef.current.clientWidth
+        setFieldWidth(Math.min(available, 600))
       }
-
-      setFieldSize({ w: Math.floor(w), h: Math.floor(h) })
     }
     updateSize()
     window.addEventListener('resize', updateSize)
     return () => window.removeEventListener('resize', updateSize)
   }, [])
+
+  const fieldHeight = Math.round(fieldWidth * FIELD.ASPECT_RATIO)
 
   const currentElements =
     activePlayIndex >= 0 && activeStepIndex >= 0
@@ -111,22 +103,20 @@ export function EditorLayout() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-[100dvh] bg-gray-950 overflow-hidden">
+    <div className="flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 bg-gray-950 min-h-screen">
       {/* Play list */}
-      <div className="shrink-0">
-        <PlayListPanel />
-      </div>
+      <PlayListPanel />
 
-      {/* Center: field + controls — fills remaining space */}
-      <div className="flex-1 flex flex-col min-h-0 p-2 md:p-4 gap-1.5 md:gap-2">
+      {/* Center: field + controls */}
+      <div className="flex-1 flex flex-col gap-1.5 md:gap-3 items-center">
         {/* Title row */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="w-full flex items-center gap-2">
           <div className="flex-1 min-w-0">
             <input
               type="text"
               value={session.title}
               onChange={(e) => useEditorStore.getState().updateSessionTitle(e.target.value)}
-              className="bg-transparent text-white text-base md:text-xl font-bold border-b border-gray-700 focus:border-blue-500 outline-none w-full pb-0.5"
+              className="bg-transparent text-white text-lg md:text-xl font-bold border-b border-gray-700 focus:border-blue-500 outline-none w-full pb-0.5"
             />
             <div className="text-[10px] mt-0.5">
               {saveError ? (
@@ -149,78 +139,98 @@ export function EditorLayout() {
           </button>
         </div>
 
-        {/* Toolbar */}
-        <div className="shrink-0">
-          <ElementToolbar />
+        {/* Toolbar + mode toggle */}
+        <div className="w-full flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <ElementToolbar />
+          </div>
+          {/* Mode toggle — only visible on touch devices / small screens */}
+          <button
+            onClick={() => setEditMode(!editMode)}
+            className={`md:hidden shrink-0 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${
+              editMode
+                ? 'bg-blue-600 text-white'
+                : 'bg-yellow-600 text-white'
+            }`}
+          >
+            {editMode ? '✏️ Editar' : '☝️ Mover'}
+          </button>
         </div>
 
-        {/* Field — takes ALL remaining vertical space */}
-        <div ref={fieldContainerRef} className="flex-1 flex justify-center items-center min-h-0">
+        {/* Field canvas */}
+        <div ref={containerRef} className="w-full flex justify-center relative">
           {noPlaySelected ? (
-            <div className="text-gray-500 text-sm text-center p-4">
+            <div
+              className="flex items-center justify-center border-2 border-dashed border-gray-700 rounded-lg text-gray-500 text-sm text-center p-4"
+              style={{ width: fieldWidth, height: fieldHeight }}
+            >
               Seleccioná o creá una jugada para empezar
             </div>
           ) : (
-            <Stage
-              ref={stageRef}
-              width={fieldSize.w}
-              height={fieldSize.h}
-              onClick={(e) => {
-                const pos = e.target.getStage()?.getPointerPosition()
-                if (pos) {
-                  setLastTapPosition(
-                    (pos.x / fieldSize.w) * 100,
-                    (pos.y / fieldSize.h) * 100,
-                  )
-                }
-              }}
-              onTap={(e) => {
-                const pos = e.target.getStage()?.getPointerPosition()
-                if (pos) {
-                  setLastTapPosition(
-                    (pos.x / fieldSize.w) * 100,
-                    (pos.y / fieldSize.h) * 100,
-                  )
-                }
-              }}
-            >
-              <FieldRenderer
-                width={fieldSize.w}
-                height={fieldSize.h}
-                elements={currentElements}
-                draggable
-                selectedElementId={selectedElementId}
-                onElementDragEnd={handleDragEnd}
-                onElementSelect={selectElement}
-                onElementUpdate={updateElement}
-              />
-            </Stage>
+            <>
+              <Stage
+                ref={stageRef}
+                width={fieldWidth}
+                height={fieldHeight}
+                style={editMode ? undefined : { pointerEvents: 'none' }}
+                onClick={(e) => {
+                  const pos = e.target.getStage()?.getPointerPosition()
+                  if (pos) {
+                    setLastTapPosition(
+                      (pos.x / fieldWidth) * 100,
+                      (pos.y / fieldHeight) * 100,
+                    )
+                  }
+                }}
+                onTap={(e) => {
+                  const pos = e.target.getStage()?.getPointerPosition()
+                  if (pos) {
+                    setLastTapPosition(
+                      (pos.x / fieldWidth) * 100,
+                      (pos.y / fieldHeight) * 100,
+                    )
+                  }
+                }}
+              >
+                <FieldRenderer
+                  width={fieldWidth}
+                  height={fieldHeight}
+                  elements={currentElements}
+                  draggable={editMode}
+                  selectedElementId={selectedElementId}
+                  onElementDragEnd={handleDragEnd}
+                  onElementSelect={selectElement}
+                  onElementUpdate={updateElement}
+                />
+              </Stage>
+
+              {/* Scroll mode indicator overlay */}
+              {!editMode && (
+                <div className="absolute inset-0 flex items-start justify-center pt-2 pointer-events-none">
+                  <span className="bg-yellow-600/80 text-white text-xs px-3 py-1 rounded-full">
+                    Modo mover — deslizá para scrollear
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
 
         {/* Contextual actions for selected element */}
-        {selectedElement && (
-          <div className="shrink-0">
-            <SelectedElementActions
-              element={selectedElement}
-              onDelete={(id) => removeElement(id)}
-              onUpdate={(id, updates) => updateElement(id, updates)}
-              onDeselect={() => selectElement(null)}
-            />
-          </div>
+        {selectedElement && editMode && (
+          <SelectedElementActions
+            element={selectedElement}
+            onDelete={(id) => removeElement(id)}
+            onUpdate={(id, updates) => updateElement(id, updates)}
+            onDeselect={() => selectElement(null)}
+          />
         )}
 
         {/* Step navigator */}
-        <div className="shrink-0">
-          <StepNavigator />
-        </div>
+        <StepNavigator />
 
         {/* Play notes */}
-        {!noPlaySelected && (
-          <div className="shrink-0">
-            <PlayNotes />
-          </div>
-        )}
+        {!noPlaySelected && <PlayNotes />}
       </div>
     </div>
   )
@@ -244,15 +254,17 @@ function PlayNotes() {
   if (!play) return null
 
   return (
-    <textarea
-      value={localNotes}
-      onChange={(e) => {
-        setLocalNotes(e.target.value)
-        updatePlayNotes(play.id, e.target.value)
-      }}
-      placeholder="Notas tacticas de esta jugada..."
-      rows={2}
-      className="w-full px-3 py-1.5 rounded bg-gray-800 text-gray-300 text-xs placeholder:text-gray-600 outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-    />
+    <div className="w-full">
+      <textarea
+        value={localNotes}
+        onChange={(e) => {
+          setLocalNotes(e.target.value)
+          updatePlayNotes(play.id, e.target.value)
+        }}
+        placeholder="Notas tacticas de esta jugada..."
+        rows={2}
+        className="w-full px-3 py-1.5 rounded bg-gray-800 text-gray-300 text-xs placeholder:text-gray-600 outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+      />
+    </div>
   )
 }
