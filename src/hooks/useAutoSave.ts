@@ -7,7 +7,7 @@ export function useAutoSave(debounceMs = 2000) {
   const [saving, setSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const isFirstRender = useRef(true)
 
   useEffect(() => {

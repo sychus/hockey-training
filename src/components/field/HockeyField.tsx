@@ -56,7 +56,6 @@ export function HockeyField({ width, height }: HockeyFieldProps) {
         baseY={0}
         direction="down"
         fieldWidth={width}
-        fieldHeight={height}
         lineColor={lineColor}
         lineWidth={lw}
       />
@@ -67,7 +66,6 @@ export function HockeyField({ width, height }: HockeyFieldProps) {
         baseY={height}
         direction="up"
         fieldWidth={width}
-        fieldHeight={height}
         lineColor={lineColor}
         lineWidth={lw}
       />
@@ -122,7 +120,6 @@ function ShootingCircleD({
   baseY,
   direction,
   fieldWidth,
-  fieldHeight,
   lineColor,
   lineWidth,
 }: {
@@ -130,7 +127,6 @@ function ShootingCircleD({
   baseY: number
   direction: 'up' | 'down'
   fieldWidth: number
-  fieldHeight: number
   lineColor: string
   lineWidth: number
 }) {

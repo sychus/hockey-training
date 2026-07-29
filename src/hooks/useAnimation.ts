@@ -27,7 +27,7 @@ export function useAnimation({
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [interpolationT, setInterpolationT] = useState(0)
-  const rafRef = useRef<number>()
+  const rafRef = useRef<number>(undefined)
   const startTimeRef = useRef<number>(0)
   const stepIndexRef = useRef(0)
 

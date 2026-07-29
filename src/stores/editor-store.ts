@@ -228,7 +228,7 @@ export const useEditorStore = create<EditorState>((set, _get) => ({
       const play = state.session.plays[activePlayIndex]
       const step = play.steps[activeStepIndex]
       const elements = step.elements.map((el) =>
-        el.id === elementId ? { ...el, ...updates } : el,
+        el.id === elementId ? ({ ...el, ...updates } as FieldElement) : el,
       )
       const updatedStep = { ...step, elements }
       const steps = play.steps.map((s, i) => (i === activeStepIndex ? updatedStep : s))

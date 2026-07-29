@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useEditorStore } from '../../stores/editor-store'
-import { createPlayer, createBall } from '../../domain/factories'
+import { createPlayer } from '../../domain/factories'
 
 describe('editorStore', () => {
   beforeEach(() => {
