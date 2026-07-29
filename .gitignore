@@ -26,6 +26,9 @@ dist-ssr
 # Netlify
 .netlify
 
+# Local dev data
+data/
+
 # Env
 .env
 .env.*
