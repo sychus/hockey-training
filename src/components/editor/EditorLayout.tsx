@@ -42,40 +42,47 @@ export function EditorLayout() {
     return () => window.removeEventListener('resize', updateSize)
   }, [])
 
-  // Allow page scroll when touching empty canvas, block only when dragging elements
+  // Allow page scroll on empty canvas, drag only on elements.
+  // Strategy: default touch-action is pan-y (browser scrolls).
+  // On pointerdown over an element, switch to none (Konva drags).
+  // On pointerup/end, switch back to pan-y.
   useEffect(() => {
     const stage = stageRef.current
     if (!stage) return
 
-    const container = stage.container()
+    const canvas = stage.container().querySelector('canvas')
+    if (!canvas) return
 
-    const handleTouchStart = (_e: TouchEvent) => {
-      // Check if the touch lands on a Konva shape (not the stage/layer background)
-      const target = stage.getIntersection(stage.getPointerPosition()!)
-      if (target && target.getClassName() !== 'Stage' && target.getParent()?.getClassName() !== 'Layer') {
-        // Touching an element — let Konva handle it (drag)
-        isDraggingElement.current = true
-      } else {
-        // Touching empty canvas — let browser scroll
-        isDraggingElement.current = false
+    // Default: let browser handle vertical scroll
+    canvas.style.touchAction = 'pan-y'
+
+    const handlePointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') return
+
+      const pos = { x: e.offsetX, y: e.offsetY }
+      const target = stage.getIntersection(pos)
+
+      if (target && target.getClassName() !== 'Stage') {
+        // Finger is on a shape → block scroll so Konva can drag
+        canvas.style.touchAction = 'none'
       }
     }
 
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!isDraggingElement.current) {
-        // Don't prevent default — browser handles scroll
-        return
-      }
-      // Konva is handling the drag, prevent scroll
-      e.preventDefault()
+    const handlePointerUp = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') return
+      // Restore scroll capability
+      canvas.style.touchAction = 'pan-y'
+      isDraggingElement.current = false
     }
 
-    container.addEventListener('touchstart', handleTouchStart, { passive: true })
-    container.addEventListener('touchmove', handleTouchMove, { passive: false })
+    canvas.addEventListener('pointerdown', handlePointerDown)
+    canvas.addEventListener('pointerup', handlePointerUp)
+    canvas.addEventListener('pointercancel', handlePointerUp)
 
     return () => {
-      container.removeEventListener('touchstart', handleTouchStart)
-      container.removeEventListener('touchmove', handleTouchMove)
+      canvas.removeEventListener('pointerdown', handlePointerDown)
+      canvas.removeEventListener('pointerup', handlePointerUp)
+      canvas.removeEventListener('pointercancel', handlePointerUp)
     }
   })
 
