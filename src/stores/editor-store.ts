@@ -8,6 +8,7 @@ interface EditorState {
   activePlayIndex: number
   activeStepIndex: number
   selectedElementId: string | null
+  lastTapPosition: { x: number; y: number }
 
   // Session
   setSession: (session: Session) => void
@@ -36,6 +37,7 @@ interface EditorState {
   setActivePlay: (index: number) => void
   setActiveStep: (index: number) => void
   selectElement: (id: string | null) => void
+  setLastTapPosition: (x: number, y: number) => void
 
   // Reset
   reset: () => void
@@ -46,6 +48,7 @@ const initialSession = createSession({ title: 'Nueva Sesión' })
 export const useEditorStore = create<EditorState>((set, _get) => ({
   session: initialSession,
   activePlayIndex: -1,
+  lastTapPosition: { x: 50, y: 50 },
   activeStepIndex: -1,
   selectedElementId: null,
 
@@ -256,12 +259,15 @@ export const useEditorStore = create<EditorState>((set, _get) => ({
 
   selectElement: (id) => set({ selectedElementId: id }),
 
+  setLastTapPosition: (x, y) => set({ lastTapPosition: { x, y } }),
+
   // === Reset ===
   reset: () =>
     set({
       session: createSession({ title: 'Nueva Sesión' }),
       activePlayIndex: -1,
       activeStepIndex: -1,
+      lastTapPosition: { x: 50, y: 50 },
       selectedElementId: null,
     }),
 }))

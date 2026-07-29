@@ -18,6 +18,7 @@ export function EditorLayout() {
   const selectedElementId = useEditorStore((s) => s.selectedElementId)
   const removeElement = useEditorStore((s) => s.removeElement)
   const updateElement = useEditorStore((s) => s.updateElement)
+  const setLastTapPosition = useEditorStore((s) => s.setLastTapPosition)
 
   const { saving, lastSaved, error: saveError } = useAutoSave()
   const [previewMode, setPreviewMode] = useState(false)
@@ -139,7 +140,30 @@ export function EditorLayout() {
               Seleccioná o creá una jugada para empezar
             </div>
           ) : (
-            <Stage width={fieldWidth} height={fieldHeight}>
+            <Stage
+              width={fieldWidth}
+              height={fieldHeight}
+              onClick={(e) => {
+                const stage = e.target.getStage()
+                const pos = stage?.getPointerPosition()
+                if (pos) {
+                  setLastTapPosition(
+                    (pos.x / fieldWidth) * 100,
+                    (pos.y / fieldHeight) * 100,
+                  )
+                }
+              }}
+              onTap={(e) => {
+                const stage = e.target.getStage()
+                const pos = stage?.getPointerPosition()
+                if (pos) {
+                  setLastTapPosition(
+                    (pos.x / fieldWidth) * 100,
+                    (pos.y / fieldHeight) * 100,
+                  )
+                }
+              }}
+            >
               <FieldRenderer
                 width={fieldWidth}
                 height={fieldHeight}
