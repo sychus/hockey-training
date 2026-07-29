@@ -50,21 +50,21 @@ export function HockeyField({ width, height }: HockeyFieldProps) {
         dash={[10, 5]}
       />
 
-      {/* Shooting circle (D) — arriba */}
+      {/* Shooting circle (D) — arriba: opens downward into the field */}
       <ShootingCircleD
         centerX={centerX}
-        baseY={0}
-        direction="down"
+        goalLineY={0}
+        opensDown
         fieldWidth={width}
         lineColor={lineColor}
         lineWidth={lw}
       />
 
-      {/* Shooting circle (D) — abajo */}
+      {/* Shooting circle (D) — abajo: opens upward into the field */}
       <ShootingCircleD
         centerX={centerX}
-        baseY={height}
-        direction="up"
+        goalLineY={height}
+        opensDown={false}
         fieldWidth={width}
         lineColor={lineColor}
         lineWidth={lw}
@@ -86,7 +86,7 @@ export function HockeyField({ width, height }: HockeyFieldProps) {
         fill={lineColor}
       />
 
-      {/* Arco — arriba (dentro de la cancha, sobre la línea de fondo) */}
+      {/* Arco — arriba */}
       <Rect
         x={centerX - goalHalfW}
         y={-goalDepth}
@@ -112,20 +112,22 @@ export function HockeyField({ width, height }: HockeyFieldProps) {
 }
 
 /**
- * El "D" de hockey FIH: un arco de 14.63m de radio + línea recta de 3.66m en la base.
- * Se dibuja con un Shape custom usando la API Canvas 2D.
+ * FIH shooting circle ("D"):
+ * - 14.63m radius arc centered on the middle of the goal line
+ * - Plus a 3.66m straight line along the goal line (the goal width)
+ * - The arc opens INTO the field (down for top goal, up for bottom goal)
  */
 function ShootingCircleD({
   centerX,
-  baseY,
-  direction,
+  goalLineY,
+  opensDown,
   fieldWidth,
   lineColor,
   lineWidth,
 }: {
   centerX: number
-  baseY: number
-  direction: 'up' | 'down'
+  goalLineY: number
+  opensDown: boolean
   fieldWidth: number
   lineColor: string
   lineWidth: number
@@ -133,48 +135,51 @@ function ShootingCircleD({
   const radiusPx = (FIELD_LINES.shootingCircle.radiusPct / 100) * fieldWidth
   const straightHalf = ((FIELD_LINES.shootingCircle.straightLineWidthPct / 100) * fieldWidth) / 2
 
+  // The angle where the arc meets the goal line
+  // sin(angle) = straightHalf / radius  →  the arc starts/ends where it hits the straight section
+  const edgeAngle = Math.asin(straightHalf / radiusPx)
+
   return (
     <Shape
-      sceneFunc={(ctx, shape) => {
+      sceneFunc={(ctx) => {
         ctx.beginPath()
 
-        if (direction === 'down') {
-          // "D" mirando hacia abajo (parte superior de la cancha)
-          // Línea recta en la base (sobre la línea de fondo)
-          ctx.moveTo(centerX - straightHalf, baseY)
+        if (opensDown) {
+          // Top of field: arc bulges downward
+          // Start at left edge of straight section on the goal line
+          ctx.moveTo(centerX - straightHalf, goalLineY)
 
-          // Arco hacia abajo
-          const startAngle = Math.asin(straightHalf / radiusPx)
+          // Arc from left to right, going DOWN (clockwise from left)
+          // In canvas: 0 = right, π/2 = down, π = left, 3π/2 = up
+          // We want the arc to go from (π - edgeAngle) to (edgeAngle), sweeping clockwise (downward)
           ctx.arc(
             centerX,
-            baseY,
+            goalLineY,
             radiusPx,
-            Math.PI + startAngle,
-            -startAngle,
-            false,
+            Math.PI - edgeAngle,  // start: upper-left
+            edgeAngle,            // end: upper-right
+            false,                // clockwise = the arc goes DOWN
           )
         } else {
-          // "D" mirando hacia arriba (parte inferior de la cancha)
-          ctx.moveTo(centerX + straightHalf, baseY)
+          // Bottom of field: arc bulges upward
+          // Start at right edge of straight section on the goal line
+          ctx.moveTo(centerX + straightHalf, goalLineY)
 
-          const startAngle = Math.asin(straightHalf / radiusPx)
+          // Arc from right to left, going UP (clockwise from right)
           ctx.arc(
             centerX,
-            baseY,
+            goalLineY,
             radiusPx,
-            -startAngle,
-            Math.PI + startAngle,
-            true,
+            -edgeAngle,              // start: lower-right
+            Math.PI + edgeAngle,     // end: lower-left
+            false,                   // clockwise = the arc goes UP
           )
         }
 
         ctx.strokeStyle = lineColor
         ctx.lineWidth = lineWidth
         ctx.stroke()
-        ctx.fillStrokeShape(shape)
       }}
-      stroke={lineColor}
-      strokeWidth={lineWidth}
     />
   )
 }
