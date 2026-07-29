@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/sychus/develop/hockey-training add vite.config.ts src/index.css package.json pnpm-lock.yaml)",
+      "Bash(git -C /Users/sychus/develop/hockey-training commit -m 'chore: configure tailwindcss 4')"
+    ]
+  }
+}
