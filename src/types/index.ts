@@ -46,6 +46,7 @@ export interface TextElement extends BaseElement {
   type: 'text'
   content: string
   fontSize?: number
+  rotation?: number
 }
 
 export type FieldElement =

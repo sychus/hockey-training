@@ -81,7 +81,15 @@ export function FieldRenderer({
           />
         )
       case 'text':
-        return <TextNote key={element.id} element={element} {...commonProps} />
+        return (
+          <TextNote
+            key={element.id}
+            element={element}
+            {...commonProps}
+            selected={isSelected}
+            onUpdate={onElementUpdate}
+          />
+        )
     }
   }
 
