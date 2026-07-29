@@ -3,7 +3,6 @@ import { Stage } from 'react-konva'
 import { FieldRenderer } from '../field/FieldRenderer'
 import { PlaybackControls } from './PlaybackControls'
 import { useAnimation } from '../../hooks/useAnimation'
-import { useTouchScroll } from '../../hooks/useTouchScroll'
 import { FIELD } from '../../lib/constants'
 import type { Session } from '../../types'
 
@@ -14,10 +13,7 @@ interface SessionViewerProps {
 export function SessionViewer({ session }: SessionViewerProps) {
   const [activePlayIndex, setActivePlayIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
-  const stageContainerRef = useRef<HTMLDivElement>(null)
   const [fieldWidth, setFieldWidth] = useState(350)
-
-  useTouchScroll(stageContainerRef)
 
   const currentPlay = session.plays[activePlayIndex]
 
@@ -50,16 +46,16 @@ export function SessionViewer({ session }: SessionViewerProps) {
 
   if (session.plays.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-950 text-gray-400">
+      <div className="flex items-center justify-center h-full bg-gray-950 text-gray-400">
         Esta sesión no tiene jugadas todavía.
       </div>
     )
   }
 
   return (
-    <div className="bg-gray-950 min-h-screen flex flex-col">
+    <div className="bg-gray-950 h-screen flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="p-4 text-center">
+      <div className="p-3 text-center shrink-0">
         <h1 className="text-white font-bold text-lg">{session.title}</h1>
         {session.description && (
           <p className="text-gray-400 text-sm mt-1">{session.description}</p>
@@ -68,7 +64,7 @@ export function SessionViewer({ session }: SessionViewerProps) {
 
       {/* Play selector */}
       {session.plays.length > 1 && (
-        <div className="flex overflow-x-auto gap-2 px-4 pb-2">
+        <div className="flex overflow-x-auto gap-2 px-4 pb-2 shrink-0">
           {session.plays.map((play, index) => (
             <button
               key={play.id}
@@ -88,42 +84,39 @@ export function SessionViewer({ session }: SessionViewerProps) {
         </div>
       )}
 
-      {/* Play title + notes */}
-      {currentPlay && (
-        <div className="px-4 pb-2">
-          <h2 className="text-white font-semibold text-sm">{currentPlay.title}</h2>
-          {currentPlay.notes && (
-            <p className="text-gray-400 text-xs mt-1 bg-gray-800 rounded p-2">
-              {currentPlay.notes}
-            </p>
-          )}
+      {/* Play notes */}
+      {currentPlay?.notes && (
+        <div className="px-4 pb-2 shrink-0">
+          <p className="text-gray-400 text-xs bg-gray-800 rounded p-2">
+            {currentPlay.notes}
+          </p>
         </div>
       )}
 
-      {/* Field */}
-      <div ref={containerRef} className="flex-1 flex justify-center items-center p-2">
-        <div ref={stageContainerRef}>
-          <Stage width={fieldWidth} height={fieldHeight}>
-            <FieldRenderer
-              width={fieldWidth}
-              height={fieldHeight}
-              elements={currentElements}
-            />
-          </Stage>
-        </div>
+      {/* Field — fills remaining space */}
+      <div ref={containerRef} className="flex-1 flex justify-center items-center p-2 min-h-0">
+        <Stage width={fieldWidth} height={fieldHeight}>
+          <FieldRenderer
+            width={fieldWidth}
+            height={fieldHeight}
+            elements={currentElements}
+          />
+        </Stage>
       </div>
 
       {/* Controls */}
-      <PlaybackControls
-        isPlaying={isPlaying}
-        currentStep={currentStepIndex}
-        totalSteps={currentPlay?.steps.length ?? 0}
-        onPlay={play}
-        onPause={pause}
-        onStop={stop}
-        onNextStep={nextStep}
-        onPrevStep={prevStep}
-      />
+      <div className="shrink-0">
+        <PlaybackControls
+          isPlaying={isPlaying}
+          currentStep={currentStepIndex}
+          totalSteps={currentPlay?.steps.length ?? 0}
+          onPlay={play}
+          onPause={pause}
+          onStop={stop}
+          onNextStep={nextStep}
+          onPrevStep={prevStep}
+        />
+      </div>
     </div>
   )
 }
