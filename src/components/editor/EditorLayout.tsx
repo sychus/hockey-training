@@ -5,6 +5,7 @@ import { PlayListPanel } from './PlayListPanel'
 import { StepNavigator } from './StepNavigator'
 import { ElementToolbar } from './ElementToolbar'
 import { useEditorStore } from '../../stores/editor-store'
+import { useAutoSave } from '../../hooks/useAutoSave'
 import { FIELD } from '../../lib/constants'
 
 export function EditorLayout() {
@@ -15,6 +16,8 @@ export function EditorLayout() {
   const selectElement = useEditorStore((s) => s.selectElement)
   const selectedElementId = useEditorStore((s) => s.selectedElementId)
   const removeElement = useEditorStore((s) => s.removeElement)
+
+  const { saving, lastSaved, error: saveError } = useAutoSave()
 
   const containerRef = useRef<HTMLDivElement>(null)
   const [fieldWidth, setFieldWidth] = useState(500)
@@ -77,6 +80,17 @@ export function EditorLayout() {
             onChange={(e) => useEditorStore.getState().updateSessionTitle(e.target.value)}
             className="bg-transparent text-white text-xl font-bold border-b border-gray-700 focus:border-blue-500 outline-none w-full pb-1"
           />
+          <div className="text-xs mt-1">
+            {saveError ? (
+              <span className="text-red-400">{saveError}</span>
+            ) : saving ? (
+              <span className="text-gray-500">Guardando...</span>
+            ) : lastSaved ? (
+              <span className="text-gray-500">
+                Guardado {lastSaved.toLocaleTimeString('es-AR')}
+              </span>
+            ) : null}
+          </div>
         </div>
 
         <ElementToolbar />
