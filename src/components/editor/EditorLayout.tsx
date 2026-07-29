@@ -4,10 +4,10 @@ import { FieldRenderer } from '../field/FieldRenderer'
 import { PlayListPanel } from './PlayListPanel'
 import { StepNavigator } from './StepNavigator'
 import { ElementToolbar } from './ElementToolbar'
+import { SelectedElementActions } from './SelectedElementActions'
 import { SessionViewer } from '../viewer/SessionViewer'
 import { useEditorStore } from '../../stores/editor-store'
 import { useAutoSave } from '../../hooks/useAutoSave'
-import { useTouchScroll } from '../../hooks/useTouchScroll'
 import { FIELD } from '../../lib/constants'
 
 export function EditorLayout() {
@@ -25,10 +25,7 @@ export function EditorLayout() {
   const [previewMode, setPreviewMode] = useState(false)
 
   const containerRef = useRef<HTMLDivElement>(null)
-  const stageContainerRef = useRef<HTMLDivElement>(null)
   const [fieldWidth, setFieldWidth] = useState(350)
-
-  useTouchScroll(stageContainerRef)
 
   useEffect(() => {
     const updateSize = () => {
@@ -49,6 +46,10 @@ export function EditorLayout() {
       ? (session.plays[activePlayIndex]?.steps[activeStepIndex]?.elements ?? [])
       : []
 
+  const selectedElement = selectedElementId
+    ? currentElements.find((el) => el.id === selectedElementId) ?? null
+    : null
+
   const handleDragEnd = useCallback(
     (id: string, x: number, y: number) => {
       moveElement(id, x, y)
@@ -56,10 +57,14 @@ export function EditorLayout() {
     [moveElement],
   )
 
+  // Keyboard delete — only when focus is on body (not in inputs/textareas)
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedElementId && document.activeElement === document.body) {
+        const tag = (document.activeElement?.tagName ?? '').toLowerCase()
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+        if (selectedElementId) {
+          e.preventDefault()
           removeElement(selectedElementId)
         }
       }
@@ -77,7 +82,6 @@ export function EditorLayout() {
   if (previewMode) {
     return (
       <div className="fixed inset-0 z-50 bg-gray-950 flex flex-col">
-        {/* Top bar — clearly indicates this is a preview */}
         <div className="bg-blue-900 px-4 py-2 flex items-center justify-between shrink-0">
           <span className="text-blue-200 text-xs md:text-sm">
             Vista previa — Asi lo van a ver los jugadores
@@ -89,7 +93,6 @@ export function EditorLayout() {
             Volver al editor
           </button>
         </div>
-        {/* Exact same viewer the players see */}
         <div className="flex-1 overflow-auto">
           <SessionViewer session={session} />
         </div>
@@ -98,13 +101,14 @@ export function EditorLayout() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-3 md:gap-4 p-3 md:p-4 bg-gray-950 min-h-screen">
-      {/* Play list: collapsible bar on mobile, sidebar on desktop */}
+    <div className="flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 bg-gray-950 h-screen overflow-hidden">
+      {/* Play list */}
       <PlayListPanel />
 
-      {/* Centro: cancha + controles */}
-      <div className="flex-1 flex flex-col gap-2 md:gap-3 items-center">
-        <div className="w-full flex items-start gap-2">
+      {/* Center: field + controls */}
+      <div className="flex-1 flex flex-col gap-1.5 md:gap-3 items-center min-h-0">
+        {/* Title row */}
+        <div className="w-full flex items-start gap-2 shrink-0">
           <div className="flex-1 min-w-0">
             <input
               type="text"
@@ -112,7 +116,7 @@ export function EditorLayout() {
               onChange={(e) => useEditorStore.getState().updateSessionTitle(e.target.value)}
               className="bg-transparent text-white text-lg md:text-xl font-bold border-b border-gray-700 focus:border-blue-500 outline-none w-full pb-1"
             />
-            <div className="text-xs mt-1">
+            <div className="text-xs mt-0.5">
               {saveError ? (
                 <span className="text-red-400">{saveError}</span>
               ) : saving ? (
@@ -133,23 +137,13 @@ export function EditorLayout() {
           </button>
         </div>
 
-        {/* Toolbar + delete button row */}
-        <div className="flex items-center gap-2 w-full">
-          <div className="flex-1 min-w-0">
-            <ElementToolbar />
-          </div>
-          {selectedElementId && (
-            <button
-              onClick={() => removeElement(selectedElementId)}
-              className="shrink-0 w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded bg-red-700 hover:bg-red-600 text-white text-lg"
-              title="Eliminar elemento seleccionado"
-            >
-              ✕
-            </button>
-          )}
+        {/* Toolbar */}
+        <div className="w-full shrink-0">
+          <ElementToolbar />
         </div>
 
-        <div ref={containerRef} className="w-full flex justify-center">
+        {/* Field canvas — takes remaining space */}
+        <div ref={containerRef} className="w-full flex-1 flex justify-center items-start min-h-0">
           {noPlaySelected ? (
             <div
               className="flex items-center justify-center border-2 border-dashed border-gray-700 rounded-lg text-gray-500 text-sm text-center p-4"
@@ -158,7 +152,6 @@ export function EditorLayout() {
               Seleccioná o creá una jugada para empezar
             </div>
           ) : (
-            <div ref={stageContainerRef}>
             <Stage
               width={fieldWidth}
               height={fieldHeight}
@@ -194,11 +187,21 @@ export function EditorLayout() {
                 onElementUpdate={updateElement}
               />
             </Stage>
-            </div>
           )}
         </div>
 
-        <StepNavigator />
+        {/* Contextual actions for selected element */}
+        <SelectedElementActions
+          element={selectedElement}
+          onDelete={(id) => removeElement(id)}
+          onUpdate={(id, updates) => updateElement(id, updates)}
+          onDeselect={() => selectElement(null)}
+        />
+
+        {/* Step navigator */}
+        <div className="w-full shrink-0">
+          <StepNavigator />
+        </div>
 
         {/* Play notes */}
         {!noPlaySelected && <PlayNotes />}
@@ -215,7 +218,6 @@ function PlayNotes() {
   const [localNotes, setLocalNotes] = useState('')
   const [currentPlayId, setCurrentPlayId] = useState<string | null>(null)
 
-  // Sync when play changes
   useEffect(() => {
     if (play && play.id !== currentPlayId) {
       setLocalNotes(play.notes ?? '')
@@ -226,7 +228,7 @@ function PlayNotes() {
   if (!play) return null
 
   return (
-    <div className="w-full">
+    <div className="w-full shrink-0">
       <textarea
         value={localNotes}
         onChange={(e) => {
