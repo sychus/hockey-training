@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, useEffect } from 'react'
 import { Stage } from 'react-konva'
-import type Konva from 'konva'
+import Konva from 'konva'
 import { FieldRenderer } from '../field/FieldRenderer'
 import { PlayListPanel } from './PlayListPanel'
 import { StepNavigator } from './StepNavigator'
@@ -28,7 +28,6 @@ export function EditorLayout() {
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
   const [fieldWidth, setFieldWidth] = useState(350)
-  const isDraggingElement = useRef(false)
 
   useEffect(() => {
     const updateSize = () => {
@@ -42,47 +41,30 @@ export function EditorLayout() {
     return () => window.removeEventListener('resize', updateSize)
   }, [])
 
-  // Allow page scroll on empty canvas, drag only on elements.
-  // Strategy: default touch-action is pan-y (browser scrolls).
-  // On pointerdown over an element, switch to none (Konva drags).
-  // On pointerup/end, switch back to pan-y.
+  // Mobile scroll fix: Konva calls preventDefault() on ALL touch events,
+  // which blocks page scrolling. We override Konva's internal handler to
+  // only preventDefault when the touch is on a draggable element.
   useEffect(() => {
     const stage = stageRef.current
     if (!stage) return
 
-    const canvas = stage.container().querySelector('canvas')
-    if (!canvas) return
+    const content = stage.content
+    if (!content) return
 
-    // Default: let browser handle vertical scroll
-    canvas.style.touchAction = 'pan-y'
-
-    const handlePointerDown = (e: PointerEvent) => {
-      if (e.pointerType !== 'touch') return
-
-      const pos = { x: e.offsetX, y: e.offsetY }
-      const target = stage.getIntersection(pos)
-
-      if (target && target.getClassName() !== 'Stage') {
-        // Finger is on a shape → block scroll so Konva can drag
-        canvas.style.touchAction = 'none'
-      }
+    // Konva adds its touchstart/touchmove handlers to stage.content.
+    // We add our own handler BEFORE Konva's (capture phase) to cancel
+    // Konva's preventDefault for touches on empty areas.
+    const handleTouchMove = (e: TouchEvent) => {
+      // If Konva is actively dragging something, let it preventDefault
+      if (Konva.isDragging()) return
+      // Otherwise, stop Konva from blocking the scroll
+      e.stopImmediatePropagation()
     }
 
-    const handlePointerUp = (e: PointerEvent) => {
-      if (e.pointerType !== 'touch') return
-      // Restore scroll capability
-      canvas.style.touchAction = 'pan-y'
-      isDraggingElement.current = false
-    }
-
-    canvas.addEventListener('pointerdown', handlePointerDown)
-    canvas.addEventListener('pointerup', handlePointerUp)
-    canvas.addEventListener('pointercancel', handlePointerUp)
+    content.addEventListener('touchmove', handleTouchMove, { capture: true, passive: true })
 
     return () => {
-      canvas.removeEventListener('pointerdown', handlePointerDown)
-      canvas.removeEventListener('pointerup', handlePointerUp)
-      canvas.removeEventListener('pointercancel', handlePointerUp)
+      content.removeEventListener('touchmove', handleTouchMove, { capture: true } as EventListenerOptions)
     }
   })
 
@@ -100,7 +82,6 @@ export function EditorLayout() {
   const handleDragEnd = useCallback(
     (id: string, x: number, y: number) => {
       moveElement(id, x, y)
-      isDraggingElement.current = false
     },
     [moveElement],
   )
