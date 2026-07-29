@@ -71,14 +71,23 @@ export function EditorLayout() {
 
   if (previewMode) {
     return (
-      <div className="fixed inset-0 z-50 bg-black">
-        <button
-          onClick={() => setPreviewMode(false)}
-          className="absolute top-4 right-4 z-50 px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm"
-        >
-          Cerrar vista previa
-        </button>
-        <SessionViewer session={session} />
+      <div className="fixed inset-0 z-50 bg-gray-950 flex flex-col">
+        {/* Top bar — clearly indicates this is a preview */}
+        <div className="bg-blue-900 px-4 py-2 flex items-center justify-between shrink-0">
+          <span className="text-blue-200 text-xs md:text-sm">
+            Vista previa — Asi lo van a ver los jugadores
+          </span>
+          <button
+            onClick={() => setPreviewMode(false)}
+            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm"
+          >
+            Volver al editor
+          </button>
+        </div>
+        {/* Exact same viewer the players see */}
+        <div className="flex-1 overflow-auto">
+          <SessionViewer session={session} />
+        </div>
       </div>
     )
   }
