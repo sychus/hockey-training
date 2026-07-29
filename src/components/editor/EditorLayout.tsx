@@ -4,6 +4,7 @@ import { FieldRenderer } from '../field/FieldRenderer'
 import { PlayListPanel } from './PlayListPanel'
 import { StepNavigator } from './StepNavigator'
 import { ElementToolbar } from './ElementToolbar'
+import { SessionViewer } from '../viewer/SessionViewer'
 import { useEditorStore } from '../../stores/editor-store'
 import { useAutoSave } from '../../hooks/useAutoSave'
 import { FIELD } from '../../lib/constants'
@@ -18,6 +19,7 @@ export function EditorLayout() {
   const removeElement = useEditorStore((s) => s.removeElement)
 
   const { saving, lastSaved, error: saveError } = useAutoSave()
+  const [previewMode, setPreviewMode] = useState(false)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const [fieldWidth, setFieldWidth] = useState(500)
@@ -66,6 +68,20 @@ export function EditorLayout() {
 
   const noPlaySelected = activePlayIndex < 0
 
+  if (previewMode) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black">
+        <button
+          onClick={() => setPreviewMode(false)}
+          className="absolute top-4 right-4 z-50 px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm"
+        >
+          Cerrar vista previa
+        </button>
+        <SessionViewer session={session} />
+      </div>
+    )
+  }
+
   return (
     <div className="flex gap-4 p-4 bg-gray-950 min-h-screen">
       {/* Panel izquierdo: lista de jugadas */}
@@ -73,24 +89,33 @@ export function EditorLayout() {
 
       {/* Centro: cancha + controles */}
       <div className="flex-1 flex flex-col gap-3 items-center">
-        <div className="w-full">
-          <input
-            type="text"
-            value={session.title}
-            onChange={(e) => useEditorStore.getState().updateSessionTitle(e.target.value)}
-            className="bg-transparent text-white text-xl font-bold border-b border-gray-700 focus:border-blue-500 outline-none w-full pb-1"
-          />
-          <div className="text-xs mt-1">
-            {saveError ? (
-              <span className="text-red-400">{saveError}</span>
-            ) : saving ? (
-              <span className="text-gray-500">Guardando...</span>
-            ) : lastSaved ? (
-              <span className="text-gray-500">
-                Guardado {lastSaved.toLocaleTimeString('es-AR')}
-              </span>
-            ) : null}
+        <div className="w-full flex items-start gap-3">
+          <div className="flex-1">
+            <input
+              type="text"
+              value={session.title}
+              onChange={(e) => useEditorStore.getState().updateSessionTitle(e.target.value)}
+              className="bg-transparent text-white text-xl font-bold border-b border-gray-700 focus:border-blue-500 outline-none w-full pb-1"
+            />
+            <div className="text-xs mt-1">
+              {saveError ? (
+                <span className="text-red-400">{saveError}</span>
+              ) : saving ? (
+                <span className="text-gray-500">Guardando...</span>
+              ) : lastSaved ? (
+                <span className="text-gray-500">
+                  Guardado {lastSaved.toLocaleTimeString('es-AR')}
+                </span>
+              ) : null}
+            </div>
           </div>
+          <button
+            onClick={() => setPreviewMode(true)}
+            disabled={session.plays.length === 0}
+            className="px-3 py-1 rounded bg-purple-700 hover:bg-purple-600 text-white text-sm disabled:opacity-30 shrink-0"
+          >
+            Vista jugador
+          </button>
         </div>
 
         <ElementToolbar />
