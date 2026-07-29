@@ -155,20 +155,31 @@ export function EditorLayout() {
 }
 
 function PlayNotes() {
-  const activePlayIndex = useEditorStore((s) => s.activePlayIndex)
   const play = useEditorStore((s) =>
     s.activePlayIndex >= 0 ? s.session.plays[s.activePlayIndex] : null,
   )
   const updatePlayNotes = useEditorStore((s) => s.updatePlayNotes)
+  const [localNotes, setLocalNotes] = useState('')
+  const [currentPlayId, setCurrentPlayId] = useState<string | null>(null)
 
-  if (!play || activePlayIndex < 0) return null
+  // Sync when play changes
+  useEffect(() => {
+    if (play && play.id !== currentPlayId) {
+      setLocalNotes(play.notes ?? '')
+      setCurrentPlayId(play.id)
+    }
+  }, [play, currentPlayId])
+
+  if (!play) return null
 
   return (
     <div className="w-full">
       <textarea
-        key={play.id}
-        defaultValue={play.notes ?? ''}
-        onChange={(e) => updatePlayNotes(play.id, e.target.value)}
+        value={localNotes}
+        onChange={(e) => {
+          setLocalNotes(e.target.value)
+          updatePlayNotes(play.id, e.target.value)
+        }}
         placeholder="Notas tacticas de esta jugada..."
         rows={2}
         className="w-full px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm placeholder:text-gray-600 outline-none focus:ring-1 focus:ring-blue-500 resize-none"
