@@ -3,6 +3,7 @@ import { Stage } from 'react-konva'
 import { FieldRenderer } from '../field/FieldRenderer'
 import { PlaybackControls } from './PlaybackControls'
 import { useAnimation } from '../../hooks/useAnimation'
+import { useTouchScroll } from '../../hooks/useTouchScroll'
 import { FIELD } from '../../lib/constants'
 import type { Session } from '../../types'
 
@@ -13,7 +14,10 @@ interface SessionViewerProps {
 export function SessionViewer({ session }: SessionViewerProps) {
   const [activePlayIndex, setActivePlayIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
+  const stageContainerRef = useRef<HTMLDivElement>(null)
   const [fieldWidth, setFieldWidth] = useState(350)
+
+  useTouchScroll(stageContainerRef)
 
   const currentPlay = session.plays[activePlayIndex]
 
@@ -98,13 +102,15 @@ export function SessionViewer({ session }: SessionViewerProps) {
 
       {/* Field */}
       <div ref={containerRef} className="flex-1 flex justify-center items-center p-2">
-        <Stage width={fieldWidth} height={fieldHeight}>
-          <FieldRenderer
-            width={fieldWidth}
-            height={fieldHeight}
-            elements={currentElements}
-          />
-        </Stage>
+        <div ref={stageContainerRef}>
+          <Stage width={fieldWidth} height={fieldHeight}>
+            <FieldRenderer
+              width={fieldWidth}
+              height={fieldHeight}
+              elements={currentElements}
+            />
+          </Stage>
+        </div>
       </div>
 
       {/* Controls */}
