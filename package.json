@@ -1,0 +1,33 @@
+{
+  "name": "hockey-training",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "konva": "^10.3.0",
+    "nanoid": "^6.0.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-konva": "^19.2.5",
+    "react-router": "^8.3.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "jsdom": "^30.0.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
+  },
+  "packageManager": "pnpm@10.28.0"
+}
