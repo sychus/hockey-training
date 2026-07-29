@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { SessionCard } from './SessionCard'
+import { ShareModal } from '../ui/ShareModal'
 import {
   listSessions,
   deleteSession as apiDeleteSession,
@@ -17,6 +18,7 @@ export function SessionList({ onEditSession }: SessionListProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState('')
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
 
   useEffect(() => {
     loadSessions()
@@ -59,13 +61,7 @@ export function SessionList({ onEditSession }: SessionListProps) {
 
   function handleShare(session: Session) {
     const url = `${window.location.origin}/s/${session.id}`
-    navigator.clipboard.writeText(url).then(
-      () => alert(`Link copiado:\n${url}`),
-      () => {
-        // Fallback for browsers that block clipboard
-        prompt('Copiá este link:', url)
-      },
-    )
+    setShareUrl(url)
   }
 
   if (loading) {
@@ -117,6 +113,10 @@ export function SessionList({ onEditSession }: SessionListProps) {
             />
           ))}
         </div>
+      )}
+
+      {shareUrl && (
+        <ShareModal url={shareUrl} onClose={() => setShareUrl(null)} />
       )}
     </div>
   )
