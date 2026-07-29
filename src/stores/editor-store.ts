@@ -194,7 +194,16 @@ export const useEditorStore = create<EditorState>((set, _get) => ({
       if (activePlayIndex < 0 || activeStepIndex < 0) return state
       const play = state.session.plays[activePlayIndex]
       const step = play.steps[activeStepIndex]
-      const elements = step.elements.map((el) => (el.id === elementId ? { ...el, x, y } : el))
+      const elements = step.elements.map((el) => {
+        if (el.id !== elementId) return el
+        // For arrows, preserve the relative offset between start and end
+        if (el.type === 'arrow') {
+          const dx = el.toX - el.x
+          const dy = el.toY - el.y
+          return { ...el, x, y, toX: x + dx, toY: y + dy }
+        }
+        return { ...el, x, y }
+      })
       const updatedStep = { ...step, elements }
       const steps = play.steps.map((s, i) => (i === activeStepIndex ? updatedStep : s))
       const updatedPlay = { ...play, steps }

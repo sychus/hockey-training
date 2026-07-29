@@ -1,5 +1,4 @@
-import { Rect, Group } from 'react-konva'
-import { COLORS } from '../../../lib/constants'
+import { Line, Rect, Group } from 'react-konva'
 import type { GoalElement, MiniGoalElement } from '../../../types'
 
 interface GoalTokenProps {
@@ -22,8 +21,10 @@ export function GoalToken({
   const x = (element.x / 100) * fieldWidth
   const y = (element.y / 100) * fieldHeight
   const isMini = element.type === 'mini-goal'
-  const goalW = fieldWidth * (isMini ? 0.05 : 0.08)
-  const goalH = fieldWidth * (isMini ? 0.02 : 0.03)
+  const goalW = fieldWidth * (isMini ? 0.06 : 0.10)
+  const goalH = fieldWidth * (isMini ? 0.025 : 0.04)
+  const halfW = goalW / 2
+  const postWidth = isMini ? 2 : 3
 
   return (
     <Group
@@ -39,14 +40,45 @@ export function GoalToken({
       onClick={() => onSelect?.(element.id)}
       onTap={() => onSelect?.(element.id)}
     >
+      {/* Net background (light fill so it's visible on green) */}
       <Rect
-        offsetX={goalW / 2}
-        offsetY={goalH / 2}
+        x={-halfW}
+        y={-goalH}
         width={goalW}
         height={goalH}
-        fill="transparent"
-        stroke={COLORS.goal}
-        strokeWidth={2}
+        fill="rgba(255,255,255,0.15)"
+      />
+      {/* Net pattern (horizontal lines) */}
+      {Array.from({ length: 3 }, (_, i) => {
+        const ny = -goalH + ((i + 1) * goalH) / 4
+        return (
+          <Line
+            key={`nh-${i}`}
+            points={[-halfW, ny, halfW, ny]}
+            stroke="rgba(255,255,255,0.3)"
+            strokeWidth={0.5}
+          />
+        )
+      })}
+      {/* Posts: U-shape open at bottom */}
+      <Line
+        points={[
+          -halfW, 0,
+          -halfW, -goalH,
+          halfW, -goalH,
+          halfW, 0,
+        ]}
+        stroke="#ffffff"
+        strokeWidth={postWidth}
+        lineCap="round"
+        lineJoin="round"
+      />
+      {/* Crossbar accent */}
+      <Line
+        points={[-halfW, -goalH, halfW, -goalH]}
+        stroke={isMini ? '#ffcc00' : '#ff4444'}
+        strokeWidth={postWidth + 1}
+        lineCap="round"
       />
     </Group>
   )

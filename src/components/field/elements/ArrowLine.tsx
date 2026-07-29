@@ -1,4 +1,4 @@
-import { Arrow } from 'react-konva'
+import { Arrow, Circle, Group } from 'react-konva'
 import { COLORS } from '../../../lib/constants'
 import type { ArrowElement } from '../../../types'
 
@@ -23,6 +23,8 @@ export function ArrowLine({
   element,
   fieldWidth,
   fieldHeight,
+  draggable = false,
+  onDragEnd,
   onSelect,
 }: ArrowLineProps) {
   const fromX = (element.x / 100) * fieldWidth
@@ -32,17 +34,34 @@ export function ArrowLine({
 
   const config = ARROW_STYLE_CONFIG[element.style]
 
+  const relToX = toX - fromX
+  const relToY = toY - fromY
+
   return (
-    <Arrow
-      points={[fromX, fromY, toX, toY]}
-      stroke={config.color}
-      strokeWidth={2}
-      fill={config.color}
-      pointerLength={8}
-      pointerWidth={6}
-      dash={config.dash}
+    <Group
+      x={fromX}
+      y={fromY}
+      draggable={draggable}
+      onDragEnd={(e) => {
+        const newX = (e.target.x() / fieldWidth) * 100
+        const newY = (e.target.y() / fieldHeight) * 100
+        onDragEnd?.(element.id, newX, newY)
+      }}
       onClick={() => onSelect?.(element.id)}
       onTap={() => onSelect?.(element.id)}
-    />
+    >
+      {/* Invisible hit area at the start point for easier grabbing */}
+      {draggable && <Circle radius={10} fill="transparent" />}
+      <Arrow
+        points={[0, 0, relToX, relToY]}
+        stroke={config.color}
+        strokeWidth={2.5}
+        fill={config.color}
+        pointerLength={8}
+        pointerWidth={6}
+        dash={config.dash}
+        hitStrokeWidth={16}
+      />
+    </Group>
   )
 }

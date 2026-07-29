@@ -22,7 +22,12 @@ export function PlayerToken({
   const x = (element.x / 100) * fieldWidth
   const y = (element.y / 100) * fieldHeight
   const radius = (ELEMENT_SIZES.playerRadius / 100) * fieldWidth
-  const color = element.team === 'own' ? COLORS.ownTeam : COLORS.rivalTeam
+  const isOwn = element.team === 'own'
+  const fillColor = isOwn ? COLORS.ownTeam : COLORS.rivalTeam
+  const strokeColor = isOwn ? '#c8a000' : '#a82020'
+  const textColor = isOwn ? '#1a1a00' : '#ffffff'
+
+  const fontSize = Math.max(radius * 1.1, 8)
 
   return (
     <Group
@@ -37,17 +42,32 @@ export function PlayerToken({
       onClick={() => onSelect?.(element.id)}
       onTap={() => onSelect?.(element.id)}
     >
-      <Circle radius={radius} fill={color} stroke="#000" strokeWidth={1} />
+      {/* Outer glow for visibility on green */}
+      <Circle
+        radius={radius + 2}
+        fill="transparent"
+        stroke={isOwn ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'}
+        strokeWidth={1}
+      />
+      {/* Main body */}
+      <Circle
+        radius={radius}
+        fill={fillColor}
+        stroke={strokeColor}
+        strokeWidth={2}
+      />
+      {/* Label */}
       <Text
         text={element.label}
-        fontSize={radius * 0.9}
-        fill="#000"
+        fontSize={fontSize}
+        fill={textColor}
         fontStyle="bold"
         align="center"
         verticalAlign="middle"
-        offsetX={radius * 0.5}
-        offsetY={radius * 0.4}
-        width={radius}
+        width={radius * 2}
+        height={radius * 2}
+        offsetX={radius}
+        offsetY={radius}
       />
     </Group>
   )

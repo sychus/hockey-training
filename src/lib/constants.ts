@@ -29,8 +29,8 @@ export const COLORS = {
 
 // === Tamaños de elementos (en unidades normalizadas 0-100) ===
 export const ELEMENT_SIZES = {
-  playerRadius: 2.5,
-  ballRadius: 1.2,
-  coneSize: 2,
+  playerRadius: 3.5,
+  ballRadius: 1.5,
+  coneSize: 2.5,
   fontSize: 14,
 } as const
