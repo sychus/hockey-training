@@ -7,6 +7,7 @@ import { ElementToolbar } from './ElementToolbar'
 import { SessionViewer } from '../viewer/SessionViewer'
 import { useEditorStore } from '../../stores/editor-store'
 import { useAutoSave } from '../../hooks/useAutoSave'
+import { useTouchScroll } from '../../hooks/useTouchScroll'
 import { FIELD } from '../../lib/constants'
 
 export function EditorLayout() {
@@ -24,7 +25,10 @@ export function EditorLayout() {
   const [previewMode, setPreviewMode] = useState(false)
 
   const containerRef = useRef<HTMLDivElement>(null)
+  const stageContainerRef = useRef<HTMLDivElement>(null)
   const [fieldWidth, setFieldWidth] = useState(350)
+
+  useTouchScroll(stageContainerRef)
 
   useEffect(() => {
     const updateSize = () => {
@@ -129,7 +133,21 @@ export function EditorLayout() {
           </button>
         </div>
 
-        <ElementToolbar />
+        {/* Toolbar + delete button row */}
+        <div className="flex items-center gap-2 w-full">
+          <div className="flex-1 min-w-0">
+            <ElementToolbar />
+          </div>
+          {selectedElementId && (
+            <button
+              onClick={() => removeElement(selectedElementId)}
+              className="shrink-0 w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded bg-red-700 hover:bg-red-600 text-white text-lg"
+              title="Eliminar elemento seleccionado"
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
         <div ref={containerRef} className="w-full flex justify-center">
           {noPlaySelected ? (
@@ -140,6 +158,7 @@ export function EditorLayout() {
               Seleccioná o creá una jugada para empezar
             </div>
           ) : (
+            <div ref={stageContainerRef}>
             <Stage
               width={fieldWidth}
               height={fieldHeight}
@@ -175,6 +194,7 @@ export function EditorLayout() {
                 onElementUpdate={updateElement}
               />
             </Stage>
+            </div>
           )}
         </div>
 
